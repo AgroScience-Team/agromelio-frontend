@@ -1,36 +1,34 @@
 <template>
   <div>
-    <div class="row q-gutter-sm">
+    <div class="row q-gutter-sm buttons-container q-pa-md">
       <q-btn label="Загрузить файл" @click="uploadFile"></q-btn>
       <q-btn label="Добавить данные о почве" @click="goToSoilPage"></q-btn>
     </div>
     <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
 
-    <div v-show="formData">
-      <q-input v-model="formData.name" label="Имя поля"></q-input>
-      <q-input v-model="formData.description" label="Описание"></q-input>
-      <q-input v-model="formData.activityStart" label="Дата начала (DD-MM-YYYY)" hint="Format: DD-MM-YYYY"
-        mask="##-##-####"></q-input>
-      <q-input v-model="formData.activityEnd" label="Дата окончания (DD-MM-YYYY)" hint="Format: DD-MM-YYYY"
-        mask="##-##-####"></q-input>
+    <div v-show="formData" class="form-container q-pa-md">
+      <q-input v-model="formData.name" label="Имя поля" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.description" label="Описание" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.activityStart" label="Дата начала" hint="Format: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.activityEnd" label="Дата окончания" hint="Format: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
 
-      <q-input v-model="colorInput" label="Выберите цвет" readonly @click="triggerColorPicker"></q-input>
+      <q-input v-model="colorInput" label="Выберите цвет" readonly @click="triggerColorPicker" outlined dense class="q-mb-md"></q-input>
       <input type="color" ref="hiddenColorPicker" style="display: none" @input="updateColorInput($event.target.value)" />
 
-      <q-input v-model="coordinatesJSON" label="Координаты"></q-input>
+      <q-input v-model="coordinatesJSON" label="Координаты" outlined dense class="q-mb-md"></q-input>
       <q-card flat bordered class="q-ma-md">
         <q-card-section>
           <div class="text-h6">Площадь поля</div>
-          <div class="text-subtitle2">{{ calculateArea ? calculateArea.toFixed(2) + ' square meters' : 'Нет координат' }}
-          </div>
+          <div class="text-subtitle2">{{ calculateArea ? calculateArea.toFixed(2) + ' square meters' : 'Нет координат' }}</div>
         </q-card-section>
       </q-card>
 
-      <q-btn label="Готово" @click="submitData" :disabled="isSubmitDisabled"></q-btn>
+      <q-btn label="Готово" @click="submitData" :disabled="isSubmitDisabled" color="primary" class="full-width-button q-mt-md"></q-btn>
     </div>
   </div>
 </template>
-  
+
+
 <script>
 import { ref, computed } from 'vue';
 import axios from 'axios';
@@ -259,6 +257,24 @@ export default {
   },
 };
 </script>
-  
-<style></style>
-  
+
+<style>
+
+.buttons-container {
+  margin-bottom: 16px;
+}
+
+.form-container {
+  max-width: 600px;
+  margin-left: 0;
+}
+
+.q-mb-md {
+  margin-bottom: 16px;
+}
+
+.full-width-button {
+  width: 100%;
+}
+
+</style>

@@ -6,9 +6,9 @@
     <div v-show="formData">
       <q-input v-model="formData.name" label="Имя поля"></q-input>
       <q-input v-model="formData.description" label="Описание"></q-input>
-      <q-input v-model="formData.activityStart" label="Дата начала (DD-MM-YYYY)" hint="Format: DD-MM-YYYY"
+      <q-input v-model="formData.activityStart" label="Дата начала " hint="Format: DD-MM-YYYY"
         mask="##-##-####"></q-input>
-      <q-input v-model="formData.activityEnd" label="Дата окончания (DD-MM-YYYY)" hint="Format: DD-MM-YYYY"
+      <q-input v-model="formData.activityEnd" label="Дата окончания" hint="Format: DD-MM-YYYY"
         mask="##-##-####"></q-input>
 
       <q-input v-model="colorInput" label="Выберите цвет" readonly @click="triggerColorPicker"></q-input>
@@ -28,7 +28,7 @@
     </div>
   </div>
 </template>
-  
+
 <script>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
@@ -310,6 +310,5 @@ export default {
   },
 };
 </script>
-  
+
 <style></style>
-  

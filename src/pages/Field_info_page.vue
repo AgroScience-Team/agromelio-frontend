@@ -94,7 +94,7 @@
         />
         <div class="text-center q-mt-lg"></div>
         <!-- soil -->
-        <div class="text-h4 clickable-text" @click="fetchSoilComposition">
+       <!-- <div class="text-h4 clickable-text" @click="fetchSoilComposition">
           Агрохимический состав почвы
         </div>
         <q-btn label="Изменить состав почвы" @click="goToFetchSoil"></q-btn>
@@ -106,7 +106,7 @@
           :columns="soilColumns"
           row-key="id"
           hide-bottom
-        />
+        /> -->
         <q-table
           v-if="isSoilVisible"
           flat
@@ -127,6 +127,7 @@
         />
       </div>
     </div>
+
 
     <div>
      <!-- Данные о погоде -->
