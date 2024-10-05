@@ -21,7 +21,7 @@
 3. Загрузить проект из репозитория
 
 ```sh
-git clone git@github.com:AgroScience-Team/frontend.git
+git clone git@github.com:AgroScience-Team/agromelio-frontend.git
 ``` 
 4. Для сборки сервисов, описанных в конфигурационных файлах:
 ```sh
