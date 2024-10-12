@@ -29,11 +29,14 @@ module.exports = configure(function (/* ctx */) {
 
 
     build: {
+      env: {
+        VUE_APP_BASE_URL: process.env.VUE_APP_BASE_URL // 引入环境变量 Introduce environment variables
+      },
       target: {
         browser: ['es2019', 'edge88', 'firefox78', 'chrome87', 'safari13.1'],
         node: 'node16'
       },
-      extendViteConf (viteConf, { isServer, isClient }) {
+      extendViteConf(viteConf, { isServer, isClient }) {
         // example: change the chunk size warning limit
         viteConf.build = mergeConfig(viteConf.build, {
           chunkSizeWarningLimit: 750
@@ -48,19 +51,19 @@ module.exports = configure(function (/* ctx */) {
 
 
       vueRouterMode: 'hash',
-   },
+    },
 
 
-   devServer: {
-    open: false, // существующая настройка
-    server: {
-      watch: {
-        // Использование опроса, каждые 100ms проверять изменения
-        usePolling: true,
-        interval: 100,
+    devServer: {
+      open: false, // существующая настройка
+      server: {
+        watch: {
+          // Использование опроса, каждые 100ms проверять изменения
+          usePolling: true,
+          interval: 100,
+        }
       }
-    }
-  },
+    },
 
 
 
@@ -78,8 +81,8 @@ module.exports = configure(function (/* ctx */) {
 
 
     ssr: {
-     pwa: false,
-     prodPort: 9000,
+      pwa: false,
+      prodPort: 9000,
 
       middlewares: [
         'render' // keep this a@vue/cli-plugin-unit-jest/presets/no-bas last one

@@ -40,7 +40,7 @@ export function postreg({ email, text_password, role }) {
             "role": role
         }
         axios
-            .post('http://smart.agromelio.ru/api/auth/register', myrequest)
+            .post(`${process.env.VUE_APP_BASE_URL}/api/auth/register`, myrequest)
             .then((response) => {
                 console.log(response);
                 const code = response.status;
@@ -68,7 +68,7 @@ export function postlog({ username, password }) {
         }
 
         axios
-            .post('http://smart.agromelio.ru/api/auth/token', myrequest, {
+            .post(`${process.env.VUE_APP_BASE_URL}/api/auth/token`, myrequest, {
                 headers: {
                     'content-type': 'application/x-www-form-urlencoded'
                 }
@@ -100,7 +100,7 @@ export function postlog({ username, password }) {
 //         }
 
 //         axios
-//             .post('http://smart.agromelio.ru/api/profiles/workers', myrequest)
+//             .post(`${process.env.VUE_APP_BASE_URL}/api/profiles/workers`, myrequest)
 //             .then((response) => {
 //                 console.log(response);
 //                 const code = response.status;
