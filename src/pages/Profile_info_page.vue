@@ -92,7 +92,7 @@ export default {
     const workData = reactive({ name: '', surname: '', patronymic: '', date_of_birth: '', phone_number: '' });
     const flag = ref(false);
 
-    postToServer({ url: `http://smart.agromelio.ru/api/profiles/${myrole}s/me`, request: 'get' })
+    postToServer({ url: `${process.env.VUE_APP_BASE_URL}/api/profiles/${myrole}s/me`, request: 'get' })
       .then((response) => {
         for (const key in response) {
           const data = myrole === 'worker' ? workData : orgData;

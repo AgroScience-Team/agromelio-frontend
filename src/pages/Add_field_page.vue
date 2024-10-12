@@ -331,7 +331,7 @@ export default {
 
       console.log('success');
       console.log('Submitting data:', JSON.stringify(formData)); //check data
-      axios.post('http://smart.agromelio.ru/api/fields', formData.value, {
+      axios.post(`${process.env.VUE_APP_BASE_URL}/api/fields`, formData.value, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
