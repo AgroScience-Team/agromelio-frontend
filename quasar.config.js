@@ -3,7 +3,7 @@ const { mergeConfig } = require('vite')
 require('dotenv').config();
 
 module.exports = configure(function (/* ctx */) {
-  // console.log("------------------------------VUE_APP_BASE_URL:-------------------------------------------", process.env.VUE_APP_BASE_URL); // 测试环境变量 Test Environment Variables
+
   return {
     eslint: {
 
@@ -32,7 +32,7 @@ module.exports = configure(function (/* ctx */) {
 
     build: {
       env: {
-        VUE_APP_BASE_URL: JSON.stringify(process.env.VUE_APP_BASE_URL) // 引入环境变量 Introduce environment variables
+        VUE_APP_BASE_URL: process.env.VUE_APP_BASE_URL // 引入环境变量 Introduce environment variables
       },
       target: {
         browser: ['es2019', 'edge88', 'firefox78', 'chrome87', 'safari13.1'],

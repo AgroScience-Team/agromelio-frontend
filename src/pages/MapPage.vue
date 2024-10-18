@@ -36,7 +36,6 @@ export default {
 
     // Получение данных и рисование полигонов
     const fetchDataAndDrawPolygons = async () => {
-      // console.log("------------------------------VUE_APP_BASE_URL:-------------------------------------------", process.env.VUE_APP_BASE_URL);
       try {
         if (!accessToken) {
           console.error("No access token available");
