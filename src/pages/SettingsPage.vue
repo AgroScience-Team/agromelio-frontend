@@ -107,7 +107,7 @@ export default {
                   throw new Error('Не все данные введены');
               }
           }
-          const url = `http://smart.agromelio.ru/api/profiles/${myrole}s`;
+          const url = `${process.env.VUE_APP_BASE_URL}/api/profiles/${myrole}s`;
           const method = userStore.getState().user_id ? 'put' : 'post';
           const endpoint = userStore.getState().user_id ? '/me' : '';
 
@@ -149,7 +149,7 @@ export default {
       function deleteUser() {
           console.log('DELETE');
           if (userStore.getState().user_id) {
-              const url = `http://smart.agromelio.ru/api/profiles/${myrole}s/me`;
+              const url = `${process.env.VUE_APP_BASE_URL}/api/profiles/${myrole}s/me`;
               postToServer({ url, request: 'delete' })
                   .then((response) => {
                       console.log(response);

@@ -55,7 +55,7 @@ export default {
         //get crop data
         async function fetchFields() {
             try {
-                const response = await axios.get(`http://smart.agromelio.ru/api/fields/crop-rotations?id=${cropRotationId}`, {
+                const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields/crop-rotations?id=${cropRotationId}`, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json'
@@ -75,7 +75,7 @@ export default {
         //crops menu
         async function fetchCrops() {
             try {
-                const response = await axios.get('http://smart.agromelio.ru/api/fields/crops?page=0&size=5000&name=', {
+                const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields/crops?page=0&size=5000&name=`, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json'
@@ -148,7 +148,7 @@ export default {
             };
 
             console.log('Submitting data:', JSON.stringify(submissionData));
-            axios.put(`http://smart.agromelio.ru/api/fields/crop-rotations?cropRotationId=${cropRotationId}`, submissionData, {
+            axios.put(`${process.env.VUE_APP_BASE_URL}/api/fields/crop-rotations?cropRotationId=${cropRotationId}`, submissionData, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
