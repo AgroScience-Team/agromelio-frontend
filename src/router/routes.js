@@ -73,6 +73,16 @@ const routes = [
         component: () => import("pages/Add_field_page.vue")
       },
       {
+        path: "contour_info",
+        name: "contour_info",
+        component: () => import("pages/new_25_page.vue") // 页面文件名为 new_25_page.vue
+      },
+      {
+        path: "add_rotation",
+        name: "add_rotation",
+        component: () => import("pages/new_27_page.vue") // 页面文件名为 new_27_page.vue
+      },
+      {
         path: "fetch_field",
         name: "fetch_field",
         component: () => import("pages/Fetch_field_page.vue")
