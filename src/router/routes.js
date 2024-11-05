@@ -83,6 +83,11 @@ const routes = [
         component: () => import("pages/new_27_page.vue") // 页面文件名为 new_27_page.vue
       },
       {
+        path: "field_info",
+        name: "field_info",
+        component: () => import("pages/new_28_page.vue") // 页面文件名为 new_28_page.vue
+      },
+      {
         path: "fetch_field",
         name: "fetch_field",
         component: () => import("pages/Fetch_field_page.vue")
