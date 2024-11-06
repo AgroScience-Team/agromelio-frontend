@@ -1,13 +1,16 @@
 <template>
   <div class="map-container">
     <div id="map"></div>
-    <q-btn
-      fab
-      color="positive"
-      icon="add"
-      class="add-field-button"
-      @click="goToAddPage"
-    />
+    <!-- не видно после того как выбрали сезон, сделать так чтобы кнопки работали -->
+    <q-btn v-if="seasonsList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
+      <div class="button-overlay">
+        <p>Добавить сезон</p>
+      </div>
+    </q-btn>
+    <!-- кнопки для редактирования -->
+    <map-page-edit-buttons v-else></map-page-edit-buttons>
+    <!-- выбор сезона и поля из списка -->
+<dropdown-season-field-buttons :seasonsList="seasonsList"></dropdown-season-field-buttons>
   </div>
 </template>
 
@@ -20,14 +23,17 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { useQuasar } from 'quasar';
 import { userStore } from "src/usage";
-
+import MapPageEditButtons from 'src/components/MapPageEditButtons.vue';
+import DropdownSeasonFieldButtons from "src/components/DropdownSeasonFieldButtons.vue";
 export default {
+  components: { MapPageEditButtons, DropdownSeasonFieldButtons },
   name: "MapComponent",
   setup() {
     const map = ref(null);
     const router = useRouter();
     const $q = useQuasar();
     const accessToken = userStore.state.access_token;
+    const seasonsList  = ref([{}]); // массив сезонов
 
     // Переход на страницу информации о поле
     const handlePopupClick = (fieldId) => {
@@ -100,6 +106,14 @@ export default {
             });
           }
         }
+
+        //получаем данные о всех сезонах
+        const seasonsList = axios.get("http://smart.agromelio.ru/api/v2/fields-service/seasons", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          }
+        });
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -116,98 +130,129 @@ export default {
 
       // Получение данных и рисование полигонов
       fetchDataAndDrawPolygons();
+      axios.get()
+
     });
 
     // Переход к странице добавления поля
-    const goToAddPage = () => {
-      router.push("/add_field");
-    };
-
-    return { map, goToAddPage };
+    // const goToAddPage = () => {
+    //   router.push("/add_field");
+    // };
+    const goToSeasonPage = () => { // изменить маршрут на это потом
+      router.push("/add_season");
+    }
+    components: {
+  MapPageEditButtons, DropdownSeasonFieldButtons
+}
+    return { map, seasonsList, goToSeasonPage };
   },
 };
 </script>
 
 <style>
-.map-container {
-  position: relative;
-  height: 100vh;
-  width: 100%;
-}
+  .map-container {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+  }
 
-#map {
-  height: 100vh !important;
-  width: 100% !important;
-}
+  #map {
+    height: 100vh !important;
+    width: 100% !important;
+  }
 
-.add-field-button {
-  position: absolute;
-  top: 60px;
-  left: 10px;
-  z-index: 1000;
-}
+  .add-button {
+    position: absolute;
+    bottom: 60px;
+    left: 10px;
+    z-index: 1000;
+  }
 
-.leaflet-top.leaflet-left {
-  top: 120px;
-}
+  .button-overlay {
+    position: absolute;
+    background-color: #222C3C;
+    display: none;
+    text-align: center;
+    left: 90%;
+    font-size: 10px;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    white-space: nowrap;
 
-.popup-content {
-  font-family: Arial, sans-serif;
-  max-width: 300px;
-  padding: 10px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+  }
 
-.popup-content .field-name {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 5px;
-}
+  .add-button:hover .button-overlay {
+    display: block;
+    width: 110px;
+    height: 25px;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
 
-.popup-content .crop-name {
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 10px;
-}
 
-.popup-content .field-description {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 10px;
-}
 
-.popup-content .details-button {
-  display: inline-block;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  background-color: #007bff;
-  color: #ffffff;
-  text-align: center;
-  border-radius: 5px;
-  text-decoration: none;
-  cursor: pointer;
-}
 
-.popup-content .details-button:hover {
-  background-color: #0056b3;
-}
+  .leaflet-top.leaflet-left {
+    top: 120px;
+  }
 
-.popup-content .meteo-data {
-  margin-top: 10px;
-}
+  .popup-content {
+    font-family: Arial, sans-serif;
+    max-width: 300px;
+    padding: 10px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
 
-.meteo-item {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 5px;
-}
+  .popup-content .field-name {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 5px;
+  }
 
-.meteo-icon {
-  margin-right: 5px;
-  color: #007bff;
-}
+  .popup-content .crop-name {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .popup-content .field-description {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+
+  .popup-content .details-button {
+    display: inline-block;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    background-color: #007bff;
+    color: #ffffff;
+    text-align: center;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .popup-content .details-button:hover {
+    background-color: #0056b3;
+  }
+
+  .popup-content .meteo-data {
+    margin-top: 10px;
+  }
+
+  .meteo-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+  }
+
+  .meteo-icon {
+    margin-right: 5px;
+    color: #007bff;
+  }
 </style>
