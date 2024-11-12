@@ -38,9 +38,20 @@ const routes = [
         component: () => import("pages/CulturePage.vue"),
       },
       {
+        path: "season",
+        name: "SeasonPage",
+        // component: () => import("pages/RotationPage.vue"),
+        component: () => import("pages/Season_page.vue"),
+      },
+      {
+        path: "add_rotation",
+        name: "add_rotation",
+        component: () => import("pages/Rotation_add_page.vue") // 页面文件名为 new_27_page.vue
+      },
+      {
         path: "rotation",
-        name: "rotation",
-        component: () => import("pages/RotationPage.vue"),
+        name: "RotationPage",
+        component: () => import("pages/RotationPage.vue") // 页面文件名为 new_25_page.vue
       },
       {
         path: "workers",
@@ -71,16 +82,6 @@ const routes = [
         path: "add_field",
         name: "add_field",
         component: () => import("pages/Add_field_page.vue")
-      },
-      {
-        path: "contour_info",
-        name: "contour_info",
-        component: () => import("pages/new_25_page.vue") // 页面文件名为 new_25_page.vue
-      },
-      {
-        path: "add_rotation",
-        name: "add_rotation",
-        component: () => import("pages/new_27_page.vue") // 页面文件名为 new_27_page.vue
       },
       {
         path: "field_info",
