@@ -66,7 +66,8 @@
 
         console.log('success');
         console.log('Submitting data:', JSON.stringify(formData));
-        axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {
+        // axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {
+        axios.post('http://localhost:9000/api-gateway/v2/fields-service/season', formData.value, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
@@ -77,7 +78,7 @@
               type: 'positive',
               message: 'Сезон успешно создан'
             })
-            const fieldId = response.data.id;
+            const seasonId = response.data.id;
 
             // Роутинг: переход на страницу карты
             // router.push({ path: '/map', query: { fieldId: fieldId } });

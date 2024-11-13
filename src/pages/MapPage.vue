@@ -1,16 +1,22 @@
 <template>
   <div class="map-container">
     <div id="map"></div>
-    <!-- не видно после того как выбрали сезон, сделать так чтобы кнопки работали -->
-    <q-btn v-if="seasonsList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
+    <!-- если хоть один сезон есть, скрыть -->
+    <!-- <q-btn v-if="seasonsList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
       <div class="button-overlay">
         <p>Добавить сезон</p>
       </div>
-    </q-btn>
+    </q-btn> -->
+    <!-- если хоть одно поле есть, скрыть -->
+    <!-- <q-btn v-if="fieldList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
+      <div class="button-overlay">
+        <p>Добавить поле</p>
+      </div>
+    </q-btn> -->
     <!-- кнопки для редактирования -->
-    <map-page-edit-buttons v-else></map-page-edit-buttons>
+    <!-- <map-page-edit-buttons v-else></map-page-edit-buttons> -->
     <!-- выбор сезона и поля из списка -->
-<dropdown-season-field-buttons :seasonsList="seasonsList"></dropdown-season-field-buttons>
+    <dropdown-or-add-season-field-buttons></dropdown-or-add-season-field-buttons>
   </div>
 </template>
 
@@ -23,17 +29,15 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { useQuasar } from 'quasar';
 import { userStore } from "src/usage";
-import MapPageEditButtons from 'src/components/MapPageEditButtons.vue';
-import DropdownSeasonFieldButtons from "src/components/DropdownSeasonFieldButtons.vue";
+import DropdownOrAddSeasonFieldButtons from "src/components/DropdownOrAddSeasonFieldButtons.vue";
 export default {
-  components: { MapPageEditButtons, DropdownSeasonFieldButtons },
+  components: {DropdownOrAddSeasonFieldButtons },
   name: "MapComponent",
   setup() {
     const map = ref(null);
     const router = useRouter();
     const $q = useQuasar();
     const accessToken = userStore.state.access_token;
-    const seasonsList  = ref([{}]); // массив сезонов
 
     // Переход на страницу информации о поле
     const handlePopupClick = (fieldId) => {
@@ -106,14 +110,6 @@ export default {
             });
           }
         }
-
-        //получаем данные о всех сезонах
-        const seasonsList = axios.get("http://smart.agromelio.ru/api/v2/fields-service/seasons", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          }
-        });
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -138,13 +134,8 @@ export default {
     // const goToAddPage = () => {
     //   router.push("/add_field");
     // };
-    const goToSeasonPage = () => { // изменить маршрут на это потом
-      router.push("/add_season");
-    }
-    components: {
-  MapPageEditButtons, DropdownSeasonFieldButtons
-}
-    return { map, seasonsList, goToSeasonPage };
+
+    return { map};
   },
 };
 </script>
@@ -159,34 +150,6 @@ export default {
   #map {
     height: 100vh !important;
     width: 100% !important;
-  }
-
-  .add-button {
-    position: absolute;
-    bottom: 60px;
-    left: 10px;
-    z-index: 1000;
-  }
-
-  .button-overlay {
-    position: absolute;
-    background-color: #222C3C;
-    display: none;
-    text-align: center;
-    left: 90%;
-    font-size: 10px;
-    border-radius: 4px;
-    font-family: Arial, sans-serif;
-    white-space: nowrap;
-
-  }
-
-  .add-button:hover .button-overlay {
-    display: block;
-    width: 110px;
-    height: 25px;
-    padding-right: 10px;
-    padding-left: 10px;
   }
 
 
