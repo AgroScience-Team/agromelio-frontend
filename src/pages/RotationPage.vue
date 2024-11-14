@@ -36,7 +36,7 @@
         >
           <template v-slot:body-cell-edit="props">
             <q-td align="center">
-              <q-btn flat round dense icon="edit" color="primary" @click="editCropRotation(props.row.cropRotationId)" />
+              <q-btn flat round dense icon="edit" color="primary" @click="editCropRotation(props.row)" />
             </q-td>
           </template>
           <template v-slot:body-cell-delete="props">
@@ -84,9 +84,10 @@ export default {
 
     // 从路由中获取传递的查询参数
     const contourInfo = ref({
-      season: router.currentRoute.value.query.seasonName || 'Unknown Season',
+      seasonName: router.currentRoute.value.query.seasonName || 'Unknown Season',
       fieldName: router.currentRoute.value.query.fieldName || 'Unknown Field',
-      contourName: router.currentRoute.value.query.contourName || 'Unknown Contour'
+      contourName: router.currentRoute.value.query.contourName || 'Unknown Contour',
+      contourId: router.currentRoute.value.query.contourId
     });
 
     const rotationExpanded = ref(true);
@@ -106,7 +107,11 @@ export default {
 
     // 通过 API 获取轮作数据
     const fetchRotationData = async () => {
-      const contourId = router.currentRoute.value.query.contourId;
+      const contourId = contourInfo.value.contourId;
+      if (!contourId) {
+        console.error('Invalid contour ID');
+        return;
+      }
       try {
         const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/contours/${contourId}/crop-rotations`, {
           headers: {
@@ -115,12 +120,12 @@ export default {
           }
         });
         rotationData.value = response.data.map(item => ({
-          cropRotationId: item.cropRotationId,
-          culture: item.culture || 'Unknown Culture',
-          cultivar: item.cultivar || 'Unknown Cultivar',
-          description: item.description || 'No Description',
-          startDate: item.startDate || 'N/A',
-          endDate: item.endDate || 'N/A'
+          cropRotationId: item.id,
+          culture: item.culture,
+          cultivar: item.cultivar || 'N/A',
+          description: item.description,
+          startDate: item.startDate,
+          endDate: item.endDate
         }));
       } catch (error) {
         console.error('Failed to fetch rotation data:', error);
@@ -137,18 +142,78 @@ export default {
       isDeleteDialogOpen.value = true;
     };
 
-    const deleteCropRotation = () => {
-      console.log(`Deleting crop rotation with ID: ${selectedCropRotationId.value}`);
-      isDeleteDialogOpen.value = false;
-      // 在这里实现删除逻辑
+    const deleteCropRotation = async () => {
+      try {
+        const cropRotationId = selectedCropRotationId.value;
+        const response = await axios.delete(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/crop-rotation`, {
+          params: { cropRotationId },
+          headers: {
+            Authorization: `Bearer ${accessToken.value}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.status === 200) {
+          $q.notify({
+            type: 'positive',
+            message: 'Crop rotation deleted successfully!',
+            icon: 'check_circle'
+          });
+          await fetchRotationData();
+        } else {
+          $q.notify({
+            type: 'negative',
+            message: 'Failed to delete crop rotation.',
+            icon: 'error'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to delete crop rotation:', error);
+        $q.notify({
+          type: 'negative',
+          message: 'Failed to delete crop rotation. Please try again later.',
+          icon: 'error'
+        });
+      } finally {
+        isDeleteDialogOpen.value = false;
+        selectedCropRotationId.value = null;
+      }
+    };
+
+    // 编辑作物轮作信息，跳转到 add_rotation 页面
+    const editCropRotation = (cropRotation) => {
+      router.push({
+        name: 'add_rotation',
+        query: {
+          contourId: contourInfo.value.contourId,
+          seasonName: contourInfo.value.seasonName,
+          fieldName: contourInfo.value.fieldName,
+          contourName: contourInfo.value.contourName,
+          cropRotationId: cropRotation.cropRotationId,
+          culture: cropRotation.culture,
+          cultivar: cropRotation.cultivar,
+          description: cropRotation.description,
+          startDate: cropRotation.startDate,
+          endDate: cropRotation.endDate
+        }
+      });
     };
 
     onMounted(() => {
       fetchRotationData();
     });
 
+    // 跳转到 add_rotation 页面，带上 contourId 和其他参数
     const goToAddRotationPage = () => {
-      router.push('/add_rotation'); // 使用 vue-router 进行跳转
+      router.push({
+        name: 'add_rotation',
+        query: {
+          contourId: contourInfo.value.contourId,
+          seasonName: contourInfo.value.seasonName,
+          fieldName: contourInfo.value.fieldName,
+          contourName: contourInfo.value.contourName
+        }
+      });
     };
 
     return {
@@ -160,24 +225,24 @@ export default {
       selectedCropRotationId,
       goToAddRotationPage,
       confirmDelete,
-      deleteCropRotation
+      deleteCropRotation,
+      editCropRotation
     };
   }
 };
 </script>
 
 <style scoped>
-/* 主要容器样式，控制左对齐 */
+/* 样式代码保持不变 */
 .contour-info-container {
-  max-width: 100%; /* 设置为 100%，以确保内容能够充满页面 */
+  max-width: 100%;
   margin-left: 0;
 }
 
 .full-width {
-  width: 100%; /* 确保 q-expansion-item 和 q-table 的宽度为 100% */
+  width: 100%;
 }
 
-/* 标题和标签的样式 */
 .text-h6 {
   font-size: 1.25rem;
   color: #333;
@@ -189,10 +254,9 @@ export default {
 
 .info-item {
   align-items: center;
-  font-size: 1.2rem; /* 增大字体 */
+  font-size: 1.2rem;
 }
 
-/* 标签和内容的对齐 */
 .label {
   font-weight: bold;
   width: 100px;
@@ -202,7 +266,6 @@ export default {
   flex-grow: 1;
 }
 
-/* 右对齐按钮样式 */
 .button-container {
   display: flex;
   justify-content: flex-end;
@@ -214,14 +277,13 @@ export default {
   background-color: #2e2e2e;
   color: #fff;
   font-size: 1.1rem;
-  border-radius: 8px; /* 圆角 */
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* 阴影 */
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* 表格样式 */
 .custom-table .q-table__title,
 .custom-table .q-table__cell {
-  font-size: 1.1rem; /* 增大表格字体 */
+  font-size: 1.1rem;
   padding: 8px;
 }
 

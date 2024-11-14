@@ -29,45 +29,46 @@
             bordered
             :rows="fieldsData"
             :columns="fieldsColumns"
-            row-key="contour_id"
+            row-key="contourId"
             v-model:pagination="pagination"
           >
             <!-- 自定义单元格渲染 -->
-            <template v-slot:body-cell-field_name="props">
+            <template v-slot:body-cell-fieldName="props">
               <q-td :props="props">
-                <div>{{ props.row.field_name }}</div>
+                <div>{{ props.row.fieldName }}</div>
               </q-td>
             </template>
 
             <template v-slot:body-cell-contours="props">
               <q-td :props="props">
-                <div class="contour-item">
-                  {{ props.row.contour_name }} ({{ props.row.squareArea }} га)
+                <div class="contour-item" :style="{ color: '#' + props.row.contourColor }">
+                  {{ props.row.contourName }} ({{ props.row.squareArea }} га)
                   <!-- 修改按钮 -->
                   <q-btn
                     flat
                     icon="edit"
                     color="primary"
-                    @click="navigateToEditPage(props.row.contour_id)"
+                    @click="navigateToEditPage(props.row.contourId)"
                     class="edit-button"
                   />
                 </div>
               </q-td>
             </template>
 
-            <template v-slot:body-cell-crop_rotations="props">
+            <template v-slot:body-cell-cropRotations="props">
               <q-td :props="props">
                 <div class="crop-rotations">
                   <div
-                    v-for="crop in props.row.crop_rotations"
+                    v-for="crop in props.row.cropRotations"
                     :key="crop.cropRotationId"
                     class="crop-rotation"
                   >
-                    <span>{{ crop.culture }} ({{ crop.sort }})</span>
+                    <span>{{ crop.culture }} ({{ crop.cultivar }})</span>
                     <div class="timeline">
                       <span class="timeline-dot"></span>
                       <span class="timeline-line"></span>
-                      <span class="timeline-date">{{ crop.start_date }}</span> - <span class="timeline-date">{{ crop.end_date }}</span>
+                      <span class="timeline-date">{{ crop.startDate }}</span> - <span class="timeline-date">{{ crop.endDate }}</span>
+                      <div class="rotation-description">{{ crop.description }}</div>
                     </div>
                   </div>
                 </div>
@@ -102,9 +103,9 @@ export default {
 
     // 列配置
     const fieldsColumns = [
-      { name: 'field_name', label: 'поля', align: 'center', field: 'field_name', style: 'width: 20%' },
+      { name: 'fieldName', label: 'поля', align: 'center', field: 'fieldName', style: 'width: 20%' },
       { name: 'contours', label: 'Контуры', align: 'center', field: 'contours', style: 'width: 30%' },
-      { name: 'crop_rotations', label: 'Посевы', align: 'center', field: 'crop_rotations', style: 'width: 50%' }
+      { name: 'cropRotations', label: 'Посевы', align: 'center', field: 'cropRotations', style: 'width: 50%' }
     ];
 
     // 获取季节列表
@@ -117,8 +118,8 @@ export default {
           }
         });
         seasons.value = response.data.map(season => ({
-          label: season.name,
-          value: season.id
+          label: season.name, // 使用 API 的 `name` 字段
+          value: season.id    // 使用 API 的 `id` 字段
         }));
       } catch (error) {
         $q.notify({
@@ -151,26 +152,25 @@ export default {
           }
         });
         
-        console.log(response.data);
-        console.log('Fields Data:', response.data);
-        
         fieldsData.value = response.data.flatMap(field => {
           return field.contours.map((contour, index) => ({
             seasonId: selectedSeason.value,
             seasonName: selectedSeasonName.value,
-            field_id: field.fieldId,
-            field_name: index === 0 ? field.name : '',
-            contour_id: contour.contourId,
-            contour_name: contour.name,
-            squareArea: contour.squareArea,
-            crop_rotations: contour.cropRotations.map(rotation => ({
-              cropRotationId: rotation.cropRotationId,
-              culture: rotation.culture,
-              sort: rotation.cultivar,
-              start_date: rotation.startDate,
-              end_date: rotation.endDate
+            fieldId: field.id, // 使用 DTO 中的 `id`
+            fieldName: index === 0 ? field.name : '', // 使用 DTO 中的 `name`
+            // fieldDescription: index === 0 ? field.description : '', // 使用 DTO 中的 `description`
+            contourId: contour.id, // 使用 DTO 中的 `id`
+            contourName: contour.name, // 使用 DTO 中的 `name`
+            contourColor: contour.color, // 使用 DTO 中的 `color`
+            squareArea: contour.squareArea, // 使用 DTO 中的 `squareArea`
+            cropRotations: contour.cropRotations.map(rotation => ({
+              cropRotationId: rotation.id, // 使用 DTO 中的 `id`
+              culture: rotation.culture, // 使用 DTO 中的 `culture`
+              cultivar: rotation.cultivar, // 使用 DTO 中的 `cultivar`
+              startDate: rotation.startDate, // 使用 DTO 中的 `startDate`
+              endDate: rotation.endDate, // 使用 DTO 中的 `endDate`
+              description: rotation.description // 使用 DTO 中的 `description`
             }))
-
           }));
         });
       } catch (error) {
@@ -185,7 +185,7 @@ export default {
 
     // 跳转到编辑页面
     const navigateToEditPage = (contourId) => {
-      const contourData = fieldsData.value.find(row => row.contour_id === contourId);
+      const contourData = fieldsData.value.find(row => row.contourId === contourId);
       
       console.log('Selected Contour Data:', contourData);
 
@@ -195,10 +195,10 @@ export default {
           query: {
             seasonId: contourData.seasonId,
             seasonName: contourData.seasonName,
-            fieldId: contourData.field_id,
-            fieldName: contourData.field_name,
-            contourId: contourData.contour_id,
-            contourName: contourData.contour_name
+            fieldId: contourData.fieldId,
+            fieldName: contourData.fieldName,
+            contourId: contourData.contourId,
+            contourName: contourData.contourName
           }
         });
       }
