@@ -54,6 +54,11 @@ const routes = [
         component: () => import("pages/RotationPage.vue") // 页面文件名为 new_25_page.vue
       },
       {
+        path: "field_weather_info",
+        name: "FieldWeatherInfoPage",
+        component: () => import("pages/Field_weatherInfo_page.vue") // 页面文件名为 new_28_page.vue
+      },
+      {
         path: "workers",
         name: "workers",
         component: () => import("pages/WorkerPage.vue"),
@@ -82,11 +87,6 @@ const routes = [
         path: "add_field",
         name: "add_field",
         component: () => import("pages/Add_field_page.vue")
-      },
-      {
-        path: "field_info",
-        name: "field_info",
-        component: () => import("pages/new_28_page.vue") // 页面文件名为 new_28_page.vue
       },
       {
         path: "fetch_field",

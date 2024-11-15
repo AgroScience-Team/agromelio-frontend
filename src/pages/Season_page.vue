@@ -8,12 +8,14 @@
         </q-card-section>
         <q-card-section>
           <q-select
-            v-model="selectedSeason"
+            v-model="OnSeason"
             label="Выбор сезона"
             :options="seasons"
+            option-value="value"
+            option-label="label"
             dense
             outlined
-            @update:model-value="onSeasonChange"
+            @update:model-value="fetchFields"
           />
         </q-card-section>
       </q-card>
@@ -94,8 +96,7 @@ export default {
     const router = useRouter();
     const $q = useQuasar();
 
-    const selectedSeason = ref('');
-    const selectedSeasonName = ref('');
+    const OnSeason = ref(null);
     const seasons = ref([]); // 季节列表初始化为空
     const fieldsData = ref([]); // 字段数据初始化为空
     const accessToken = computed(() => userStore.state.access_token);
@@ -131,19 +132,11 @@ export default {
       }
     });
 
-    // 当季节更改时调用该方法
-    const onSeasonChange = (seasonId) => {
-      const season = seasons.value.find(season => season.value === seasonId);
-      console.log('Selected Season:', season); // 调试信息
-
-      selectedSeason.value = seasonId;
-      selectedSeasonName.value = season ? season.label : ''; // 使用 `label` 作为季节名称
-      fetchFields(seasonId); // 调用 fetchFields 函数获取数据
-    };
-
     // 获取并格式化字段数据
-    const fetchFields = async (seasonId) => {
-      if (!seasonId) return;
+    const fetchFields = async (OnSeason) => {
+      if (!OnSeason || !OnSeason.value) return;
+      const seasonId = OnSeason.value;
+      const seasonName = OnSeason.label;
       try {
         const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/seasons/${seasonId}/fields`, {
           headers: {
@@ -154,8 +147,8 @@ export default {
         
         fieldsData.value = response.data.flatMap(field => {
           return field.contours.map((contour, index) => ({
-            seasonId: selectedSeason.value,
-            seasonName: selectedSeasonName.value,
+            seasonId: seasonId,
+            seasonName: seasonName,
             fieldId: field.id, // 使用 DTO 中的 `id`
             fieldName: index === 0 ? field.name : '', // 使用 DTO 中的 `name`
             // fieldDescription: index === 0 ? field.description : '', // 使用 DTO 中的 `description`
@@ -205,12 +198,10 @@ export default {
     };
 
     return {
-      selectedSeason,
-      selectedSeasonName,
       seasons,
+      OnSeason,
       fieldsData,
       fieldsColumns,
-      onSeasonChange,
       fetchFields,
       navigateToEditPage,
       pagination
