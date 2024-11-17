@@ -59,7 +59,6 @@
           })
           return;
         };
-
         console.log('success');
         console.log('Submitting data:', JSON.stringify(formData));
         // axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {

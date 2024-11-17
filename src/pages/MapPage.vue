@@ -1,21 +1,7 @@
 <template>
   <div class="map-container">
     <div id="map"></div>
-    <!-- если хоть один сезон есть, скрыть -->
-    <!-- <q-btn v-if="seasonsList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
-      <div class="button-overlay">
-        <p>Добавить сезон</p>
-      </div>
-    </q-btn> -->
-    <!-- если хоть одно поле есть, скрыть -->
-    <!-- <q-btn v-if="fieldList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
-      <div class="button-overlay">
-        <p>Добавить поле</p>
-      </div>
-    </q-btn> -->
-    <!-- кнопки для редактирования -->
-    <!-- <map-page-edit-buttons v-else></map-page-edit-buttons> -->
-    <!-- выбор сезона и поля из списка -->
+    <!-- кнопки для добаления сезона/поля выпадающий список из сезонов/полей -->
     <dropdown-or-add-season-field-buttons></dropdown-or-add-season-field-buttons>
   </div>
 </template>

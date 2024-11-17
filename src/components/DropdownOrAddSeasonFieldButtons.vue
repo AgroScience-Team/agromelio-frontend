@@ -14,16 +14,17 @@
       <p>Добавить поле</p>
     </div>
   </q-btn>
-  <!-- seasons получаем в onmounted, отображать список если массив не пустой, иначе есть только кнопка добавления сезона -->
+  <!-- seasons получаем в onmounted, отображать список если массив не пустой, иначе есть только кнопка добавления сезона
+   если нет полей есть кнопка добавления поля -->
   <div class="season-field">
     <div v-if="seasonsList.length !==0" class="q-pa-md dropdown-button">
-      <q-btn-dropdown color="primary" label="Выбор сезона">
+      <q-btn-dropdown color="primary" label="Выбор сезона" persistent>
         <q-list>
-          <q-item v-for="season in filteredSeasons" :key="season.id" clickable v-close-popup
-            @click="chooseActiveSeason(season)" dense
-            :class="{ 'active-item': activeField && activeField.id === field.id }">
+          <q-item v-for="season in filteredSeasons" :key="season.id" clickable @click="chooseActiveSeason(season)" dense
+            :class="{ 'active-item': activeSeason && activeSeason.id === season.id }">
+            <!-- сделать чтобы класс работал и актив эл изменял цвет -->
             <q-item-section>
-              <q-item-label>{{season}}</q-item-label>
+              <q-item-label>{{season.name}}</q-item-label>
             </q-item-section>
           </q-item>
           <q-item v-if="!activeSeason" clickable v-close-popup @click="goToSeasonPage" dense
@@ -71,8 +72,8 @@
       const router = useRouter();
       const $q = useQuasar();
       const accessToken = userStore.state.access_token;
-      const activeSeason = ref();
-      const activeField = ref();
+      const activeSeason = ref(null);
+      const activeField = ref(null);
       const seasonsList = ref([]); // массив сезонов
       const fieldList = ref([]); // массив полей
       const goToSeasonPage = () => {
@@ -89,7 +90,10 @@
       }
       // если выбран активный сезон, то возвращать его, иначе весь список
       const filteredSeasons = computed(() => {
-        return activeSeason.value ? [activeSeason.value] : seasonsList.value;
+        if (activeSeason.value) {
+          return [activeSeason.value];
+        }
+        return seasonsList.value;
       });
       // если выбрано активное поле, то возвращать его, иначе весь список
       const filteredFields = computed(() => {
@@ -97,24 +101,24 @@
       });
       const fetchSeasons = async () => {
         try {
-          const response = await axios.get("http://localhost:9000/api/v2/fields-service/seasons", {
-          // const response = await this.$api.get("/api/v2/fields-service/seasons", {
+          const response = await axios.get(
+            "https://295aeaa1-a948-4811-9198-0b73bcc777b9.mock.pstmn.io/api/v2/fields-service/seasons",
+            {
             headers: {
               Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
           });
           console.log(response.data);
+          seasonsList.value = response.data;
         }
         catch (error) {
           console.log("Didn't get seasons");
         }
-
       }
       const fetchFields = async (id) => {
         try {
-          // const response = await axios.get("http://localhost:8080/api/v2/fields-service/seasons/${id}/fields", {
-          const response = await axios.get("http:///api/v2/fields-service/seasons/${id}/fields", {
+          const response = await axios.get("http://localhost:9000/api/v2/fields-service/seasons/${id}/fields", {
           headers: {
               Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
@@ -132,7 +136,12 @@
       }
       );
       const chooseActiveSeason = (season) => {
-        activeSeason.value = season;
+        if (!activeSeason.value) {
+          activeSeason.value = season;
+        }
+        else {
+          activeSeason.value = null;
+        }
       }
       const chooseActiveField = (field) => {
         activeField.value = field;
@@ -190,9 +199,10 @@
     padding-left: 10px;
   }
 
-  .active-item{
-    background-color: cadetblue;
-    color: white;
+  .active-item {
+      background-color: rgb(152, 161, 182);
+      /* color: cadetblue; */
   }
+
 
 </style>
