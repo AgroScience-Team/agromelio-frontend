@@ -3,7 +3,7 @@
     <h3 class="field-creation"><strong>Создание поля</strong></h3>
     <div v-show="formData" class="formingdata q-pa-md">
       <q-input v-model="formData.name" label="Название поля" autogrow outlined class="q-mb-lg"></q-input>
-      <q-input v-model="formData.name" label="Описание поля" autogrow outlined class="q-mb-lg"></q-input>
+      <q-input v-model="formData.desription" label="Описание поля" autogrow outlined class="q-mb-lg"></q-input>
       <q-btn label="Готово" @click="submitData" :disabled="isSubmitDisabled" color="primary"
         class="full-width-button"></q-btn>
     </div>
@@ -16,6 +16,7 @@
   import { useQuasar } from 'quasar';
   import { useRouter, useRoute } from 'vue-router';
   import { userStore } from 'src/usage';
+  import { defineEmits } from "vue";
 
   export default {
     name: 'AddFieldPage',
@@ -25,21 +26,20 @@
       const seasonId = route.params.id;
       const formData = ref({
         name: '',
-        seasonStart: '',
-        seasonEnd: '',
-        // id:''
+        desription: '',
       });
 
       const $q = useQuasar();
 
-      const goToMapPage = () => {
-        router.push('/map');
-      }
-
       const isSubmitDisabled = computed(() => {
         return !formData.value.name || !formData.value.seasonStart || !formData.value.seasonEnd;
       })
-
+      const goToMapPage = () => {
+        router.push({
+          path: '/map',
+          query: { activeField: JSON.stringify(formData) }
+        });
+      }
       const accessToken = userStore.state.access_token;
       //click submit function
       const submitData = () => {
@@ -60,39 +60,14 @@
           return;
         };
         console.log('success');
-        console.log('Submitting data:', JSON.stringify(formData));
-        // axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {
-        axios.post('/api/v2/fields-service/season', formData.value, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        })
-          .then(response => {
-            $q.notify({
-              type: 'positive',
-              message: 'Сезон успешно создан'
-            })
-            const fieldId = response.data.id;
+        console.log('Saving data:', JSON.stringify(formData));
 
-            // Роутинг: переход на страницу карты
-            // router.push({ path: '/map', query: { fieldId: fieldId } });
-
-
-            //куда все-таки надо перейти и нужно ли что-то делать с id сезона который приходит в респонсе????
-            goToMapPage();
-
-          })
-          .catch(error => {
-            if (error.response && error.response.status === 500) {
-              $q.notify({
-                type: 'negative',
-                message: 'Неизвестная ошибка'
-              })
-            }
-            console.error('Error submitting data', error);
-          });
-
+        $q.notify({
+          type: 'positive',
+          message: 'Сезон успешно создан'
+        });
+            //переходим на страницу карты передавая в квери formData
+        goToMapPage();
       };
 
 

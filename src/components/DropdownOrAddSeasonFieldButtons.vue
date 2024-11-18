@@ -9,7 +9,7 @@
   <!-- если хоть одно поле есть, скрыть
    показывать после того как выбран сезон -->
   <q-btn v-if="fieldList.length === 0 && activeSeason" fab color="primary" icon="add" class="add-button"
-    @click="goToFieldPage">
+    @click="goToFieldPage(activeSeason.id)">
     <div class="button-overlay">
       <p>Добавить поле</p>
     </div>
@@ -47,7 +47,7 @@
               <q-item-label>{{field}}</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item v-if="!activeField" v-close-popup @click="goToFieldPage" dense class="add-season-field-item">
+          <q-item v-if="!activeField" v-close-popup @click="goToFieldPage(activeSeason.id)" dense class="add-season-field-item">
             <q-item-section>
               <q-item-label>ДОБАВИТЬ ПОЛЕ</q-item-label>
             </q-item-section>
@@ -59,7 +59,7 @@
 </template>
 <script>
   import MapPageEditButtons from 'src/components/MapPageEditButtons.vue';
-  import { useRouter } from 'vue-router';
+  import { useRouter, useRoute } from 'vue-router';
   import axios from 'axios';
   import { userStore } from "src/usage";
 
@@ -70,6 +70,7 @@
 
     setup() {
       const router = useRouter();
+      const route = useRoute();
       const $q = useQuasar();
       const accessToken = userStore.state.access_token;
       const activeSeason = ref(null);
@@ -77,16 +78,19 @@
       const seasonsList = ref([]); // массив сезонов
       const fieldList = ref([]); // массив полей
       const goToSeasonPage = () => {
+        console.log("Go to season page");
         router.push("/add_season");
-        fetchSeasons();
-        //активный сезон тот который добавили
-        activeSeason.value = seasonsList.value[seasonsList.value.length - 1];
+        //активный сезон тот который добавили и получили через квери, обрабатывается в onmounted
       }
       const goToFieldPage = (id) => {
-        router.push("/add_field/${id}");
+        console.log("Go to field page, id = ", id);
+        router.push(`/add_field/${id}`);
         fetchFields();
-        // делать активным поле которое сейчас добавили
-        activeField.value = fieldList.value[fieldList.value.length - 1];
+        // делать активным поле которое сейчас добавили и получили через квери
+        activeField.value = JSON.parse(route.query.activeField);
+        fieldList.value.unshift(activeField.value);
+        console.log("active field:", activeField.value);
+
       }
       // если выбран активный сезон, то возвращать его, иначе весь список
       const filteredSeasons = computed(() => {
@@ -132,12 +136,32 @@
 
       }
       onMounted(async () => {
-        fetchSeasons();
+        const activeSeasonQuery = route.query.activeSeason;
+        // если есть квери то обновляем активный сезон
+        if (activeSeasonQuery) {
+          try {
+            activeSeason.value = JSON.parse(activeSeasonQuery);
+
+            // Убираем query-параметры после обработки
+            router.replace({
+              path: route.path,
+              query: {}, // Очищаем query
+            });
+            seasonsList.value.unshift(activeSeason.value);
+            console.log("Активный сезон получен:", activeSeason.value);
+          } catch (error) {
+            console.error("Ошибка при обработке activeSeason:", error);
+          }
+        }
+        else {
+          fetchSeasons();
+        }
       }
       );
       const chooseActiveSeason = (season) => {
         if (!activeSeason.value) {
           activeSeason.value = season;
+          // fetchFields();
         }
         else {
           activeSeason.value = null;
@@ -201,7 +225,6 @@
 
   .active-item {
       background-color: rgb(152, 161, 182);
-      /* color: cadetblue; */
   }
 
 

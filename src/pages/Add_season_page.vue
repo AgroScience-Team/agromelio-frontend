@@ -17,7 +17,6 @@
 <script>
   import { ref, computed } from 'vue';
   import axios from 'axios';
-  import * as turf from '@turf/turf';
   import { useQuasar } from 'quasar';
   import { useRouter } from 'vue-router';
   import { userStore } from 'src/usage';
@@ -30,13 +29,16 @@
         name: '',
         seasonStart: '',
         seasonEnd: '',
-        // id:''
       });
 
       const $q = useQuasar();
 
       const goToMapPage = () => {
-        router.push('/map');
+        console.log(formData.value);
+        router.push({
+          path: '/map',
+          query: { activeSeason: JSON.stringify(formData.value) }
+        });
       }
 
 
@@ -65,7 +67,7 @@
         };
 
         console.log('success');
-        console.log('Submitting data:', JSON.stringify(formData));
+        console.log('Submitting data:', JSON.stringify(formData.value));
         // axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {
         axios.post("https://295aeaa1-a948-4811-9198-0b73bcc777b9.mock.pstmn.io/api/v2/fields-service/season", formData.value, {
           headers: {
@@ -78,13 +80,8 @@
               type: 'positive',
               message: 'Сезон успешно создан'
             })
-            const seasonId = response.data.id;
-
-            // Роутинг: переход на страницу карты
-            // router.push({ path: '/map', query: { fieldId: fieldId } });
-
-
-            //куда все-таки надо перейти и нужно ли что-то делать с id сезона который приходит в респонсе????
+            formData.value.id = response.data.id;
+            // переходим на страницу карты в квери передавая созданный сезон
             goToMapPage();
 
           })
