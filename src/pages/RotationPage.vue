@@ -1,7 +1,6 @@
 <template>
   <div class="q-pa-md contour-info-container">
-    <!-- 标题部分 -->
-    <div class="text-h6 font-bold">Информация о контуре</div>
+    <div class="text-h6 font-bold">Добавление севооборота в контуре</div>
     <div class="q-mt-md q-gutter-y-xs">
       <div class="info-item row">
         <span class="label col-auto text-subtitle1 font-bold">Сезон:</span>
@@ -17,7 +16,6 @@
       </div>
     </div>
 
-    <!-- 轮作信息部分 -->
     <q-expansion-item v-model="rotationExpanded" icon="eco" dense expand-separator class="q-mt-md full-width">
       <template v-slot:header>
         <div class="text-h6 font-bold">Севооборот</div>
@@ -45,14 +43,12 @@
             </q-td>
           </template>
         </q-table>
-        <!-- 添加轮作按钮 -->
         <div class="button-container">
           <q-btn label="Добавить севооборот" @click="goToAddRotationPage" color="primary" class="add-rotation-button" />
         </div>
       </div>
     </q-expansion-item>
 
-    <!-- 删除确认对话框 -->
     <q-dialog v-model="isDeleteDialogOpen" persistent>
       <q-card>
         <q-card-section class="text-h6">
@@ -82,7 +78,6 @@ export default {
     const router = useRouter();
     const accessToken = computed(() => userStore.state.access_token);
 
-    // 从路由中获取传递的查询参数
     const contourInfo = ref({
       seasonName: router.currentRoute.value.query.seasonName || 'Unknown Season',
       fieldName: router.currentRoute.value.query.fieldName || 'Unknown Field',
@@ -105,7 +100,6 @@ export default {
     const isDeleteDialogOpen = ref(false);
     const selectedCropRotationId = ref(null);
 
-    // 通过 API 获取轮作数据
     const fetchRotationData = async () => {
       const contourId = contourInfo.value.contourId;
       if (!contourId) {
@@ -180,7 +174,6 @@ export default {
       }
     };
 
-    // 编辑作物轮作信息，跳转到 add_rotation 页面
     const editCropRotation = (cropRotation) => {
       router.push({
         name: 'add_rotation',
@@ -203,7 +196,6 @@ export default {
       fetchRotationData();
     });
 
-    // 跳转到 add_rotation 页面，带上 contourId 和其他参数
     const goToAddRotationPage = () => {
       router.push({
         name: 'add_rotation',
@@ -233,7 +225,6 @@ export default {
 </script>
 
 <style scoped>
-/* 样式代码保持不变 */
 .contour-info-container {
   max-width: 100%;
   margin-left: 0;

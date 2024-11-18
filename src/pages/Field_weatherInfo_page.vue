@@ -1,6 +1,5 @@
 <template>
   <div class="q-pa-md contour-info-container">
-    <!-- 信息部分 -->
     <div class="info-section">
       <div class="text-h6 font-bold">Информация о поле</div>
       <div class="q-mt-md q-gutter-y-xs">
@@ -15,14 +14,12 @@
       </div>
     </div>
 
-    <!-- 天气数据部分 -->
     <q-expansion-item v-model="weatherExpanded" icon="cloud" dense expand-separator class="q-mt-md weather-section">
       <template v-slot:header>
         <div class="text-h6 font-bold">Данные о погоде</div>
       </template>
       
       <div class="q-pa-md">
-        <!-- 显示天气数据 -->
         <div v-if="weatherData" class="weather-data">
           <div v-for="(item, index) in weatherData" :key="index" class="weather-item row weather-item-spacing">
             <span class="label text-subtitle1 font-bold">{{ item.label }}:</span>
@@ -30,12 +27,10 @@
           </div>
         </div>
         
-        <!-- 显示错误信息 -->
         <div v-else-if="weatherError" class="error">
           Ошибка при получении данных о погоде: {{ weatherError.message }}
         </div>
 
-        <!-- 加载状态 -->
         <div v-else class="loading">
           Загрузка данных о погоде...
         </div>
@@ -64,9 +59,8 @@ export default {
     const weatherError = ref(null);
     const accessToken = computed(() => userStore.state.access_token);
 
-    // 请求天气数据的函数
     const fetchMeteoData = async () => {
-      const fieldId = '47'; // 假设 fieldId 是已知的，如果动态获取可改为从 route 参数中获取
+      const fieldId = '47';
       const url = `${process.env.VUE_APP_BASE_URL}/api/meteo/${fieldId}`;
 
       try {
@@ -77,7 +71,6 @@ export default {
           },
         });
         
-        // 格式化天气数据
         weatherData.value = [
           { label: 'Идентификатор поля', value: response.data.field_id },
           { label: 'Последнее обновление', value: response.data.date_time },
@@ -105,7 +98,6 @@ export default {
       }
     };
 
-    // 在组件挂载时获取天气数据
     onMounted(() => {
       fetchMeteoData();
     });
@@ -121,25 +113,21 @@ export default {
 </script>
 
 <style scoped>
-/* 主容器样式，控制布局 */
 .contour-info-container {
   max-width: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* 信息部分宽度控制 */
 .info-section {
   max-width: 60%;
 }
 
-/* 天气数据部分宽度控制 */
 .weather-section {
   max-width: 80%;
   margin-top: 16px;
 }
 
-/* 标题和字体样式 */
 .text-h6 {
   font-size: 1.5rem;
   color: #333;
@@ -154,23 +142,20 @@ export default {
   font-size: 1.2rem;
 }
 
-/* 标签和内容的对齐与间距调整 */
 .label {
   font-weight: bold;
-  width: 200px; /* 增加标签宽度以拉开间距 */
+  width: 200px; 
 }
 
 .value {
   flex-grow: 1;
-  margin-left: 20px; /* 设置数据和标签之间的距离 */
+  margin-left: 20px;
 }
 
-/* 天气数据项之间的额外间距 */
 .weather-item-spacing {
   margin-bottom: 12px;
 }
 
-/* 错误消息样式 */
 .error {
   color: #ff0000;
   padding: 20px;
@@ -179,7 +164,6 @@ export default {
   border-radius: 8px;
 }
 
-/* 加载状态样式 */
 .loading {
   color: #555;
   font-size: 16px;

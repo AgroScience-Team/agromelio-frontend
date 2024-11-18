@@ -1,7 +1,6 @@
 <template>
   <q-page padding>
     <div class="q-pa-md q-gutter-md">
-      <!-- 下拉选择季节 -->
       <q-card>
         <q-card-section>
           <div class="text-h6">Севооборот</div>
@@ -20,7 +19,6 @@
         </q-card-section>
       </q-card>
 
-      <!-- 表格部分 -->
       <q-card class="q-mt-md">
         <q-card-section>
           <div class="text-h6">Информация о культурах</div>
@@ -34,7 +32,6 @@
             row-key="contourId"
             v-model:pagination="pagination"
           >
-            <!-- 自定义单元格渲染 -->
             <template v-slot:body-cell-fieldName="props">
               <q-td :props="props">
                 <div>{{ props.row.fieldName }}</div>
@@ -45,7 +42,6 @@
               <q-td :props="props">
                 <div class="contour-item" :style="{ color: '#' + props.row.contourColor }">
                   {{ props.row.contourName }} ({{ props.row.squareArea }} га)
-                  <!-- 修改按钮 -->
                   <q-btn
                     flat
                     icon="edit"
@@ -97,19 +93,18 @@ export default {
     const $q = useQuasar();
 
     const OnSeason = ref(null);
-    const seasons = ref([]); // 季节列表初始化为空
-    const fieldsData = ref([]); // 字段数据初始化为空
+    const seasons = ref([]);
+    const fieldsData = ref([]);
     const accessToken = computed(() => userStore.state.access_token);
     const pagination = ref({ rowsPerPage: 10 });
 
-    // 列配置
+
     const fieldsColumns = [
       { name: 'fieldName', label: 'поля', align: 'center', field: 'fieldName', style: 'width: 20%' },
       { name: 'contours', label: 'Контуры', align: 'center', field: 'contours', style: 'width: 30%' },
       { name: 'cropRotations', label: 'Посевы', align: 'center', field: 'cropRotations', style: 'width: 50%' }
     ];
 
-    // 获取季节列表
     onMounted(async () => {
       try {
         const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/seasons`, {
@@ -119,8 +114,8 @@ export default {
           }
         });
         seasons.value = response.data.map(season => ({
-          label: season.name, // 使用 API 的 `name` 字段
-          value: season.id    // 使用 API 的 `id` 字段
+          label: season.name,
+          value: season.id 
         }));
       } catch (error) {
         $q.notify({
@@ -132,7 +127,6 @@ export default {
       }
     });
 
-    // 获取并格式化字段数据
     const fetchFields = async (OnSeason) => {
       if (!OnSeason || !OnSeason.value) return;
       const seasonId = OnSeason.value;
@@ -149,20 +143,20 @@ export default {
           return field.contours.map((contour, index) => ({
             seasonId: seasonId,
             seasonName: seasonName,
-            fieldId: field.id, // 使用 DTO 中的 `id`
-            fieldName: index === 0 ? field.name : '', // 使用 DTO 中的 `name`
-            // fieldDescription: index === 0 ? field.description : '', // 使用 DTO 中的 `description`
-            contourId: contour.id, // 使用 DTO 中的 `id`
-            contourName: contour.name, // 使用 DTO 中的 `name`
-            contourColor: contour.color, // 使用 DTO 中的 `color`
-            squareArea: contour.squareArea, // 使用 DTO 中的 `squareArea`
+            fieldId: field.id,
+            fieldName: index === 0 ? field.name : '',
+            // fieldDescription: index === 0 ? field.description : '',
+            contourId: contour.id,
+            contourName: contour.name, 
+            contourColor: contour.color,
+            squareArea: contour.squareArea,
             cropRotations: contour.cropRotations.map(rotation => ({
-              cropRotationId: rotation.id, // 使用 DTO 中的 `id`
-              culture: rotation.culture, // 使用 DTO 中的 `culture`
-              cultivar: rotation.cultivar, // 使用 DTO 中的 `cultivar`
-              startDate: rotation.startDate, // 使用 DTO 中的 `startDate`
-              endDate: rotation.endDate, // 使用 DTO 中的 `endDate`
-              description: rotation.description // 使用 DTO 中的 `description`
+              cropRotationId: rotation.id,
+              culture: rotation.culture,
+              cultivar: rotation.cultivar,
+              startDate: rotation.startDate,
+              endDate: rotation.endDate,
+              description: rotation.description
             }))
           }));
         });
@@ -176,7 +170,6 @@ export default {
       }
     };
 
-    // 跳转到编辑页面
     const navigateToEditPage = (contourId) => {
       const contourData = fieldsData.value.find(row => row.contourId === contourId);
       
@@ -240,7 +233,7 @@ export default {
 .crop-rotations {
   display: flex;
   flex-direction: row;
-  gap: 16px; /* 控制多个作物之间的间距 */
+  gap: 16px;
 }
 
 .crop-rotation {

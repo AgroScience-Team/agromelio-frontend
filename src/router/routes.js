@@ -40,23 +40,22 @@ const routes = [
       {
         path: "season",
         name: "SeasonPage",
-        // component: () => import("pages/RotationPage.vue"),
         component: () => import("pages/Season_page.vue"),
       },
       {
         path: "add_rotation",
         name: "add_rotation",
-        component: () => import("pages/Rotation_add_page.vue") // 页面文件名为 new_27_page.vue
+        component: () => import("pages/Rotation_add_page.vue")
       },
       {
         path: "rotation",
         name: "RotationPage",
-        component: () => import("pages/RotationPage.vue") // 页面文件名为 new_25_page.vue
+        component: () => import("pages/RotationPage.vue")
       },
       {
         path: "field_weather_info",
         name: "FieldWeatherInfoPage",
-        component: () => import("pages/Field_weatherInfo_page.vue") // 页面文件名为 new_28_page.vue
+        component: () => import("pages/Field_weatherInfo_page.vue")
       },
       {
         path: "workers",

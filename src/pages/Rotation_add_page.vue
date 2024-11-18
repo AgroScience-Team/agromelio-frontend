@@ -1,9 +1,7 @@
 <template>
   <div class="q-pa-md rotation-info-container">
-    <!-- 页面标题 -->
     <div class="text-h5 font-bold">{{ isEditMode ? 'Редактировать севооборот' : 'Добавление севооборота в контуре' }}</div>
 
-    <!-- 基本信息部分 -->
     <div class="q-mt-md q-gutter-y-xs info-section">
       <div class="info-item row">
         <span class="label col-auto text-subtitle1 font-bold">Сезон:</span>
@@ -19,7 +17,6 @@
       </div>
     </div>
 
-    <!-- 输入表单 -->
     <div class="q-mt-md">
       <q-input v-model="formData.culture" label="Название культуры" outlined dense class="q-mb-md"></q-input>
       <q-input v-model="formData.cultivar" label="Название сорта" outlined dense class="q-mb-md"></q-input>
@@ -28,7 +25,6 @@
       <q-input v-model="formData.endDate" label="Дата уборки" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
     </div>
 
-    <!-- 文件上传和保存按钮 -->
     <div class="button-section q-mt-md row no-gutters items-center">
       <q-btn label="Загрузить файл" @click="uploadFile" outline color="primary" class="q-mr-md" />
       <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
@@ -85,16 +81,15 @@ export default {
     const saveRotation = async () => {
       const apiUrl = `https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service`;
       const payload = {
-        startDate: formData.value.startDate,     // 作物轮作的开始日期
-        endDate: formData.value.endDate,         // 作物轮作的结束日期
-        description: formData.value.description, // 作物轮作的描述
-        culture: formData.value.culture,         // 作物的种类
-        cultivar: formData.value.cultivar || ''  // 作物的品种（可选）
+        startDate: formData.value.startDate,     
+        endDate: formData.value.endDate,         
+        description: formData.value.description, 
+        culture: formData.value.culture,         
+        cultivar: formData.value.cultivar || ''  
       };
 
       try {
         if (isEditMode.value) {
-          // 编辑模式下调用 PUT API 更新作物轮作
           await axios.put(`${apiUrl}/crop-rotation`, payload, {
             params: { cropRotationId: cropRotationId.value },
             headers: {
@@ -108,7 +103,6 @@ export default {
             icon: 'check_circle'
           });
         } else {
-          // 创建模式下调用 POST API
           await axios.post(`${apiUrl}/contours/${contourId.value}/crop-rotation`, payload, {
             headers: {
               Authorization: `Bearer ${accessToken.value}`,
@@ -121,7 +115,7 @@ export default {
             icon: 'check_circle'
           });
         }
-        router.push({ name: 'RotationPage' }); // 保存后返回到 RotationPage 页面
+        router.push({ name: 'RotationPage' }); 
       } catch (error) {
         console.error('Ошибка при сохранении данных:', error);
         $q.notify({
