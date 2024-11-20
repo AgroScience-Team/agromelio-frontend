@@ -3,7 +3,7 @@
     <h3 class="field-creation"><strong>Создание поля</strong></h3>
     <div v-show="formData" class="formingdata q-pa-md">
       <q-input v-model="formData.name" label="Название поля" autogrow outlined class="q-mb-lg"></q-input>
-      <q-input v-model="formData.desription" label="Описание поля" autogrow outlined class="q-mb-lg"></q-input>
+      <q-input v-model="formData.description" label="Описание поля" autogrow outlined class="q-mb-lg"></q-input>
       <q-btn label="Готово" @click="submitData" :disabled="isSubmitDisabled" color="primary"
         class="full-width-button"></q-btn>
     </div>
@@ -12,7 +12,6 @@
 <script>
   import { ref, computed } from 'vue';
   import axios from 'axios';
-  import * as turf from '@turf/turf';
   import { useQuasar } from 'quasar';
   import { useRouter, useRoute } from 'vue-router';
   import { userStore } from 'src/usage';
@@ -26,18 +25,30 @@
       const seasonId = route.params.id;
       const formData = ref({
         name: '',
-        desription: '',
+        description: '',
       });
 
       const $q = useQuasar();
 
       const isSubmitDisabled = computed(() => {
-        return !formData.value.name || !formData.value.seasonStart || !formData.value.seasonEnd;
+        return !formData.value.name || !formData.value.description;
       })
       const goToMapPage = () => {
+        console.log(formData.value);
+        //сохраняем созданное поле в хранилище
+        // Получаем существующий массив
+        let existingArray = JSON.parse(sessionStorage.getItem("fields")) || [];
+
+        // Добавляем новое значение в массив
+        existingArray.push(formData.value);
+
+        // Сохраняем обновленный массив
+        sessionStorage.setItem("fields", JSON.stringify(existingArray));
+        sessionStorage.setItem("activeField", JSON.stringify(formData.value));
+
         router.push({
           path: '/map',
-          query: { activeField: JSON.stringify(formData) }
+          // query: { activeField: JSON.stringify(formData.value) }
         });
       }
       const accessToken = userStore.state.access_token;
@@ -60,13 +71,13 @@
           return;
         };
         console.log('success');
-        console.log('Saving data:', JSON.stringify(formData));
+        console.log('Saving data:', JSON.stringify(formData.value));
 
         $q.notify({
           type: 'positive',
-          message: 'Сезон успешно создан'
+          message: 'Поле успешно создано'
         });
-            //переходим на страницу карты передавая в квери formData
+        //переходим на страницу карты передавая в квери formData
         goToMapPage();
       };
 
@@ -97,7 +108,6 @@
   }
 
 </style>
-
 <!-- <template>
   <div>
     <div class="row q-gutter-sm buttons-container q-pa-md">

@@ -30,14 +30,16 @@
         seasonStart: '',
         seasonEnd: '',
       });
-
+      const seasonStore = useSeasonStore();
       const $q = useQuasar();
 
       const goToMapPage = () => {
         console.log(formData.value);
+        // сохраняем активный сезон в хранилище
+        sessionStorage.setItem("activeSeason", JSON.stringify(formData.value));
         router.push({
           path: '/map',
-          query: { activeSeason: JSON.stringify(formData.value) }
+          // query: { activeSeason: JSON.stringify(formData.value) }
         });
       }
 
@@ -81,7 +83,8 @@
               message: 'Сезон успешно создан'
             })
             formData.value.id = response.data.id;
-            // переходим на страницу карты в квери передавая созданный сезон
+            // // переходим на страницу карты в квери передавая созданный сезон
+
             goToMapPage();
 
           })

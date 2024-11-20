@@ -27,7 +27,7 @@
               <q-item-label>{{season.name}}</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item v-if="!activeSeason" clickable v-close-popup @click="goToSeasonPage" dense
+          <q-item v-if="!activeSeason" clickable v-close-popup @click="goToSeasonPage()" dense
             class="add-season-field-item">
             <q-item-section>
               <q-item-label>ДОБАВИТЬ СЕЗОН</q-item-label>
@@ -44,10 +44,10 @@
             @click="chooseActiveField(field)" dense
             :class="{ 'active-item': activeField && activeField.id === field.id }">
             <q-item-section>
-              <q-item-label>{{field}}</q-item-label>
+              <q-item-label>{{field.name}}</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item v-if="!activeField" v-close-popup @click="goToFieldPage(activeSeason.id)" dense class="add-season-field-item">
+          <q-item v-if="!activeField" v-close-popup @click="goToFieldPage()" dense class="add-season-field-item">
             <q-item-section>
               <q-item-label>ДОБАВИТЬ ПОЛЕ</q-item-label>
             </q-item-section>
@@ -60,9 +60,9 @@
 <script>
   import MapPageEditButtons from 'src/components/MapPageEditButtons.vue';
   import { useRouter, useRoute } from 'vue-router';
-  import axios from 'axios';
   import { userStore } from "src/usage";
 
+  import axios from 'axios';
   import { ref, onMounted, computed } from "vue";
   import { useQuasar } from 'quasar';
   export default {
@@ -74,23 +74,19 @@
       const $q = useQuasar();
       const accessToken = userStore.state.access_token;
       const activeSeason = ref(null);
+
       const activeField = ref(null);
       const seasonsList = ref([]); // массив сезонов
       const fieldList = ref([]); // массив полей
       const goToSeasonPage = () => {
         console.log("Go to season page");
         router.push("/add_season");
-        //активный сезон тот который добавили и получили через квери, обрабатывается в onmounted
+        // делать активным сезон который сейчас добавили
       }
-      const goToFieldPage = (id) => {
-        console.log("Go to field page, id = ", id);
-        router.push(`/add_field/${id}`);
-        fetchFields();
-        // делать активным поле которое сейчас добавили и получили через квери
-        activeField.value = JSON.parse(route.query.activeField);
-        fieldList.value.unshift(activeField.value);
-        console.log("active field:", activeField.value);
-
+      const goToFieldPage = () => {
+        console.log("Go to field page");
+        router.push("/add_field");
+        // делать активным поле которое сейчас добавили
       }
       // если выбран активный сезон, то возвращать его, иначе весь список
       const filteredSeasons = computed(() => {
@@ -118,6 +114,8 @@
         }
         catch (error) {
           console.log("Didn't get seasons");
+          seasonsList.value = [];
+
         }
       }
       const fetchFields = async (id) => {
@@ -129,6 +127,7 @@
             },
           });
           console.log(response.data)
+          fieldList.value = response.data;
         }
         catch (error) {
           console.log("Didn't get fields");
@@ -136,39 +135,83 @@
 
       }
       onMounted(async () => {
-        const activeSeasonQuery = route.query.activeSeason;
-        // если есть квери то обновляем активный сезон
-        if (activeSeasonQuery) {
-          try {
-            activeSeason.value = JSON.parse(activeSeasonQuery);
+        //   const activeSeasonQuery = route.query.activeSeason;
+        //   const activeFieldQuery = route.query.activeField;
+        //   // если есть квери то обновляем активный сезон
+        //   if (activeSeasonQuery) {
+        //     try {
+        //       activeSeason.value = JSON.parse(activeSeasonQuery);
 
-            // Убираем query-параметры после обработки
-            router.replace({
-              path: route.path,
-              query: {}, // Очищаем query
-            });
-            seasonsList.value.unshift(activeSeason.value);
-            console.log("Активный сезон получен:", activeSeason.value);
-          } catch (error) {
-            console.error("Ошибка при обработке activeSeason:", error);
-          }
+        //       // Убираем query-параметры после обработки
+        //       router.replace({
+        //         path: route.path,
+        //         query: {}, // Очищаем query
+        //       });
+        //       seasonsList.value.unshift(activeSeason.value);
+        //       console.log("Активный сезон получен:", activeSeason.value);
+        //     } catch (error) {
+        //       console.error("Ошибка при обработке activeSeason:", error);
+        //     }
+        //   }
+        //   else if (activeFieldQuery) {
+        //     try {
+        //       activeField.value = JSON.parse(activeFieldQuery);
+
+        //       // Убираем query-параметры после обработки
+        //       router.replace({
+        //         path: route.path,
+        //         query: {}, // Очищаем query
+        //       });
+        //       fieldList.value.unshift(activeField.value);
+        //       console.log("Активный сезон получен:", activeField.value);
+        //     } catch (error) {
+        //       console.error("Ошибка при обработке activeSeason:", error);
+        //     }
+        //     fetchSeasons();
+        //   }
+        //   else {
+        //     fetchSeasons();
+        //   }
+        // }
+        if (sessionStorage.getItem("activeField")) {
+          activeField.value = JSON.parse(sessionStorage.getItem("activeField"));
         }
-        else {
-          fetchSeasons();
+        if (sessionStorage.getItem("activeSeason")) {
+          activeSeason.value = JSON.parse(sessionStorage.getItem("activeSeason"));
         }
-      }
-      );
+        fetchSeasons();
+
+      });
       const chooseActiveSeason = (season) => {
         if (!activeSeason.value) {
           activeSeason.value = season;
-          // fetchFields();
+          // sessionStorage.setItem("activeSeason", JSON.stringify(season.value));
+          sessionStorage.setItem("activeSeason", JSON.stringify(activeSeason.value));
+          // получаем список полей сезона
+          console.log(sessionStorage.getItem("activeSeason"));
+          console.log(activeSeason.value);
+          fetchFields(activeSeason.value.id);
         }
         else {
           activeSeason.value = null;
+          sessionStorage.removeItem("activeSeason");
+          // sessionStorage.setItem("activeSeason", "null");
+
         }
       }
       const chooseActiveField = (field) => {
         activeField.value = field;
+        if (!activeField.value) {
+          activeField.value = field;
+          // sessionStorage.setItem("activeSeason", JSON.stringify(season.value));
+          sessionStorage.setItem("activeField", JSON.stringify(activeField.value));
+        }
+        else {
+          activeField.value = null;
+          sessionStorage.removeItem("activeField");
+          // sessionStorage.setItem("activeField", "null");
+
+        }
       }
       return {
         goToSeasonPage, goToFieldPage, activeField, activeSeason, seasonsList, fieldList,
