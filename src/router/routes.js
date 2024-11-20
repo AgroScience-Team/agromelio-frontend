@@ -112,6 +112,11 @@ const routes = [
         name: "fetch_rotation_field",
         component: () => import("pages/Fetch_rotation_field_page.vue")
       },
+      {
+        path: "add_season",
+        name: "add_season",
+        component: () => import("pages/Add_season_page.vue")
+      }
     ],
   },
 
