@@ -1,34 +1,40 @@
 <template>
   <!-- 3 кнопки будут видны если нажань на редактировать -->
   <div class="edit-mode q-pa-md">
-      <q-btn v-if="editModeOn" fab color="primary" icon="undo" class="button">
-        <div class="button-overlay">
-          <p>Шаг назад</p>
-        </div>
-      </q-btn>
-      <q-btn v-if="editModeOn" fab color="primary" icon="done" class="button" @click="goToAddPage">
-        <div class="button-overlay">
-          <p>Сохранить</p>
-        </div>
-      </q-btn>
-      <q-btn v-if="editModeOn" fab color="primary" icon="delete" class="button" @click="confirm = true">
-        <div class="button-overlay">
-          <p>Удалить контур</p>
-        </div>
-      </q-btn>
-      <!-- для подтверждения удаления
+        <q-btn v-if="editModeOn" fab color="primary" icon="add" class="button" @click="confirm = true">
+      <div class="button-overlay">
+        <p>Добавить контур</p>
+      </div>
+    </q-btn>
+    <q-btn v-if="editModeOn" fab color="primary" icon="undo" class="button">
+      <div class="button-overlay">
+        <p>Шаг назад</p>
+      </div>
+    </q-btn>
+    <q-btn v-if="editModeOn" fab color="primary" icon="done" class="button" @click="goToAddPage">
+      <div class="button-overlay">
+        <p>Сохранить</p>
+      </div>
+    </q-btn>
+    <q-btn v-if="editModeOn" fab color="primary" icon="delete" class="button" @click="confirm = true">
+      <div class="button-overlay">
+        <p>Удалить контур</p>
+      </div>
+    </q-btn>
+
+    <!-- для подтверждения удаления
        сделать чтобы кнопочки да нет работали -->
-      <q-dialog v-model="confirm" persistent>
-        <q-card class="confirm-deleting q-pa-md" style="border-radius: 40px;">
-          <q-card-section class="row items-center">
-            <span align="center"><strong>Вы действительно хотите удалить этот объект?</strong></span>
-          </q-card-section>
-          <q-card-actions align="center">
-            <q-btn label="Нет" color="primary" v-close-popup />
-            <q-btn label="Да" color="primary" v-close-popup />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
+    <q-dialog v-model="confirm" persistent>
+      <q-card class="confirm-deleting q-pa-md" style="border-radius: 40px;">
+        <q-card-section class="row items-center">
+          <span align="center"><strong>Вы действительно хотите удалить этот объект?</strong></span>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn label="Нет" color="primary" v-close-popup />
+          <q-btn label="Да" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
     <q-btn fab color="primary" icon="edit" class="button" @click="editModeOn = !editModeOn">
       <div class="button-overlay">
         <p>Режим редактирования</p>

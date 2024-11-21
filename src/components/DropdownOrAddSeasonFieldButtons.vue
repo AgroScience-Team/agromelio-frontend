@@ -56,6 +56,7 @@
       </q-btn-dropdown>
     </div>
   </div>
+  <map-page-edit-buttons v-if="activeField && activeSeason"></map-page-edit-buttons>
 </template>
 <script>
   import MapPageEditButtons from 'src/components/MapPageEditButtons.vue';
@@ -67,7 +68,9 @@
   import { useQuasar } from 'quasar';
   export default {
     name: 'DropdownOrAddSeasonFieldButtons',
-
+    components:{
+      MapPageEditButtons
+    },
     setup() {
       const router = useRouter();
       const route = useRoute();
