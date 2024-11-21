@@ -35,7 +35,7 @@
       })
       const goToMapPage = () => {
         console.log(formData.value);
-        //сохраняем созданное поле в хранилище
+        //сохраняем созданное поле в хранилище, в нем хранятся поля созданные, но не отправленные на сервер, тюк нужно отрисовать контура
         // Получаем существующий массив
         let existingArray = JSON.parse(sessionStorage.getItem("fields")) || [];
 
@@ -48,7 +48,6 @@
 
         router.push({
           path: '/map',
-          // query: { activeField: JSON.stringify(formData.value) }
         });
       }
       const accessToken = userStore.state.access_token;

@@ -39,7 +39,6 @@
         sessionStorage.setItem("activeSeason", JSON.stringify(formData.value));
         router.push({
           path: '/map',
-          // query: { activeSeason: JSON.stringify(formData.value) }
         });
       }
 
