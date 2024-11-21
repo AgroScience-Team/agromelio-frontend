@@ -1,9 +1,7 @@
 <template>
   <div class="q-pa-md rotation-info-container">
-    <!-- 页面标题 -->
-    <div class="text-h5 font-bold">Добавление севооборота в контуре</div>
+    <div class="text-h5 font-bold">{{ isEditMode ? 'Редактировать севооборот' : 'Добавление севооборота в контуре' }}</div>
 
-    <!-- 基本信息部分 -->
     <div class="q-mt-md q-gutter-y-xs info-section">
       <div class="info-item row">
         <span class="label col-auto text-subtitle1 font-bold">Сезон:</span>
@@ -13,45 +11,58 @@
         <span class="label col-auto text-subtitle1 font-bold">Поле:</span>
         <span class="value col text-subtitle1">{{ field }}</span>
       </div>
+      <div class="info-item row">
+        <span class="label col-auto text-subtitle1 font-bold">Контур:</span>
+        <span class="value col text-subtitle1">{{ contour }}</span>
+      </div>
     </div>
 
-    <!-- 输入表单 -->
     <div class="q-mt-md">
-      <q-input v-model="formData.cultureName" label="Название культуры" outlined dense class="q-mb-md"></q-input>
-      <q-input v-model="formData.sortName" label="Название сорта" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.culture" label="Название культуры" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.cultivar" label="Название сорта" outlined dense class="q-mb-md"></q-input>
       <q-input v-model="formData.description" label="Описание" outlined dense class="q-mb-md"></q-input>
-      <q-input v-model="formData.sowingDate" label="Дата сева" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
-      <q-input v-model="formData.harvestDate" label="Дата уборки" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.startDate" label="Дата сева" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.endDate" label="Дата уборки" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
     </div>
 
-    <!-- 文件上传和保存按钮 -->
-    <div class="button-section q-mt-md">
-      <q-btn label="Загрузить файл" @click="uploadFile" outline color="primary" class="upload-button" />
+    <div class="button-section q-mt-md row no-gutters items-center">
+      <q-btn label="Загрузить файл" @click="uploadFile" outline color="primary" class="q-mr-md" />
       <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
+      
+      <q-btn :label="isEditMode ? 'Сохранить изменения' : 'Сохранить'" @click="saveRotation" color="primary" push />
     </div>
-    <q-btn label="Сохранить" @click="saveRotation" color="primary" class="save-button q-mt-md" />
   </div>
 </template>
 
 <script>
-import { ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+import { useQuasar } from 'quasar';
+import { userStore } from 'src/usage';
 
 export default {
   name: 'add_rotation',
   setup() {
-    // 使用 useRoute 函数获取路由参数
+    const $q = useQuasar();
     const route = useRoute();
+    const router = useRouter();
+    const accessToken = computed(() => userStore.state.access_token);
+    
     const season = ref(route.query.seasonName || '');
     const field = ref(route.query.fieldName || '');
     const contour = ref(route.query.contourName || '');
+    const contourId = ref(route.query.contourId);
+
+    const isEditMode = ref(!!route.query.cropRotationId);
+    const cropRotationId = ref(route.query.cropRotationId || '');
 
     const formData = ref({
-      cultureName: '',
-      sortName: '',
-      description: '',
-      sowingDate: '',
-      harvestDate: ''
+      culture: route.query.culture || '',
+      cultivar: route.query.cultivar || '',
+      description: route.query.description || '',
+      startDate: route.query.startDate || '',
+      endDate: route.query.endDate || ''
     });
 
     const fileInput = ref(null);
@@ -67,8 +78,52 @@ export default {
       }
     };
 
-    const saveRotation = () => {
-      console.log('Form data:', formData.value);
+    const saveRotation = async () => {
+      const apiUrl = `https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service`;
+      const payload = {
+        startDate: formData.value.startDate,     
+        endDate: formData.value.endDate,         
+        description: formData.value.description, 
+        culture: formData.value.culture,         
+        cultivar: formData.value.cultivar || ''  
+      };
+
+      try {
+        if (isEditMode.value) {
+          await axios.put(`${apiUrl}/crop-rotation`, payload, {
+            params: { cropRotationId: cropRotationId.value },
+            headers: {
+              Authorization: `Bearer ${accessToken.value}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          $q.notify({
+            type: 'positive',
+            message: 'Изменения успешно сохранены',
+            icon: 'check_circle'
+          });
+        } else {
+          await axios.post(`${apiUrl}/contours/${contourId.value}/crop-rotation`, payload, {
+            headers: {
+              Authorization: `Bearer ${accessToken.value}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          $q.notify({
+            type: 'positive',
+            message: 'Новый севооборот успешно добавлен',
+            icon: 'check_circle'
+          });
+        }
+        router.push({ name: 'RotationPage' }); 
+      } catch (error) {
+        console.error('Ошибка при сохранении данных:', error);
+        $q.notify({
+          type: 'negative',
+          message: 'Ошибка при сохранении данных. Попробуйте еще раз.',
+          icon: 'error'
+        });
+      }
     };
 
     return {
@@ -76,6 +131,7 @@ export default {
       field,
       contour,
       formData,
+      isEditMode,
       fileInput,
       uploadFile,
       handleFileUpload,
@@ -86,25 +142,22 @@ export default {
 </script>
 
 <style scoped>
-/* 主要容器样式 */
 .rotation-info-container {
   max-width: 700px;
   margin-left: 0;
 }
 
-/* 标题样式 */
 .text-h5 {
   font-size: 1.5rem;
   color: #333;
 }
 
-/* 信息部分样式 */
-.info-section {
-  margin-top: 16px;
-}
-
 .font-bold {
   font-weight: bold;
+}
+
+.info-section {
+  margin-top: 16px;
 }
 
 .info-item {
@@ -112,7 +165,6 @@ export default {
   font-size: 1.2rem;
 }
 
-/* 标签和内容的对齐 */
 .label {
   font-weight: bold;
   width: 120px;
@@ -122,16 +174,8 @@ export default {
   flex-grow: 1;
 }
 
-/* 上传按钮和保存按钮样式 */
-.upload-button {
-  font-size: 1rem;
-  margin-right: 16px;
-}
-
-.save-button {
-  width: 200px;
-  background-color: #2e2e2e;
-  color: #fff;
-  font-size: 1.1rem;
+.button-section {
+  display: flex;
+  gap: 16px;
 }
 </style>

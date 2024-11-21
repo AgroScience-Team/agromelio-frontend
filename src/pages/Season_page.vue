@@ -1,24 +1,24 @@
 <template>
   <q-page padding>
     <div class="q-pa-md q-gutter-md">
-      <!-- 下拉选择季节 -->
       <q-card>
         <q-card-section>
           <div class="text-h6">Севооборот</div>
         </q-card-section>
         <q-card-section>
           <q-select
-            v-model="selectedSeason"
+            v-model="OnSeason"
             label="Выбор сезона"
             :options="seasons"
+            option-value="value"
+            option-label="label"
             dense
             outlined
-            @update:model-value="onSeasonChange"
+            @update:model-value="fetchFields"
           />
         </q-card-section>
       </q-card>
 
-      <!-- 表格部分 -->
       <q-card class="q-mt-md">
         <q-card-section>
           <div class="text-h6">Информация о культурах</div>
@@ -29,45 +29,44 @@
             bordered
             :rows="fieldsData"
             :columns="fieldsColumns"
-            row-key="contour_id"
+            row-key="contourId"
             v-model:pagination="pagination"
           >
-            <!-- 自定义单元格渲染 -->
-            <template v-slot:body-cell-field_name="props">
+            <template v-slot:body-cell-fieldName="props">
               <q-td :props="props">
-                <div>{{ props.row.field_name }}</div>
+                <div>{{ props.row.fieldName }}</div>
               </q-td>
             </template>
 
             <template v-slot:body-cell-contours="props">
               <q-td :props="props">
-                <div class="contour-item">
-                  {{ props.row.contour_name }} ({{ props.row.squareArea }} га)
-                  <!-- 修改按钮 -->
+                <div class="contour-item" :style="{ color: '#' + props.row.contourColor }">
+                  {{ props.row.contourName }} ({{ props.row.squareArea }} га)
                   <q-btn
                     flat
                     icon="edit"
                     color="primary"
-                    @click="navigateToEditPage(props.row.contour_id)"
+                    @click="navigateToEditPage(props.row.contourId)"
                     class="edit-button"
                   />
                 </div>
               </q-td>
             </template>
 
-            <template v-slot:body-cell-crop_rotations="props">
+            <template v-slot:body-cell-cropRotations="props">
               <q-td :props="props">
                 <div class="crop-rotations">
                   <div
-                    v-for="crop in props.row.crop_rotations"
+                    v-for="crop in props.row.cropRotations"
                     :key="crop.cropRotationId"
                     class="crop-rotation"
                   >
-                    <span>{{ crop.culture }} ({{ crop.sort }})</span>
+                    <span>{{ crop.culture }} ({{ crop.cultivar }})</span>
                     <div class="timeline">
                       <span class="timeline-dot"></span>
                       <span class="timeline-line"></span>
-                      <span class="timeline-date">{{ crop.start_date }}</span> - <span class="timeline-date">{{ crop.end_date }}</span>
+                      <span class="timeline-date">{{ crop.startDate }}</span> - <span class="timeline-date">{{ crop.endDate }}</span>
+                      <div class="rotation-description">{{ crop.description }}</div>
                     </div>
                   </div>
                 </div>
@@ -93,21 +92,19 @@ export default {
     const router = useRouter();
     const $q = useQuasar();
 
-    const selectedSeason = ref('');
-    const selectedSeasonName = ref('');
-    const seasons = ref([]); // 季节列表初始化为空
-    const fieldsData = ref([]); // 字段数据初始化为空
+    const OnSeason = ref(null);
+    const seasons = ref([]);
+    const fieldsData = ref([]);
     const accessToken = computed(() => userStore.state.access_token);
     const pagination = ref({ rowsPerPage: 10 });
 
-    // 列配置
+
     const fieldsColumns = [
-      { name: 'field_name', label: 'поля', align: 'center', field: 'field_name', style: 'width: 20%' },
+      { name: 'fieldName', label: 'поля', align: 'center', field: 'fieldName', style: 'width: 20%' },
       { name: 'contours', label: 'Контуры', align: 'center', field: 'contours', style: 'width: 30%' },
-      { name: 'crop_rotations', label: 'Посевы', align: 'center', field: 'crop_rotations', style: 'width: 50%' }
+      { name: 'cropRotations', label: 'Посевы', align: 'center', field: 'cropRotations', style: 'width: 50%' }
     ];
 
-    // 获取季节列表
     onMounted(async () => {
       try {
         const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/seasons`, {
@@ -118,7 +115,7 @@ export default {
         });
         seasons.value = response.data.map(season => ({
           label: season.name,
-          value: season.id
+          value: season.id 
         }));
       } catch (error) {
         $q.notify({
@@ -130,19 +127,10 @@ export default {
       }
     });
 
-    // 当季节更改时调用该方法
-    const onSeasonChange = (seasonId) => {
-      const season = seasons.value.find(season => season.value === seasonId);
-      console.log('Selected Season:', season); // 调试信息
-
-      selectedSeason.value = seasonId;
-      selectedSeasonName.value = season ? season.label : ''; // 使用 `label` 作为季节名称
-      fetchFields(seasonId); // 调用 fetchFields 函数获取数据
-    };
-
-    // 获取并格式化字段数据
-    const fetchFields = async (seasonId) => {
-      if (!seasonId) return;
+    const fetchFields = async (OnSeason) => {
+      if (!OnSeason || !OnSeason.value) return;
+      const seasonId = OnSeason.value;
+      const seasonName = OnSeason.label;
       try {
         const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/seasons/${seasonId}/fields`, {
           headers: {
@@ -151,26 +139,25 @@ export default {
           }
         });
         
-        console.log(response.data);
-        console.log('Fields Data:', response.data);
-        
         fieldsData.value = response.data.flatMap(field => {
           return field.contours.map((contour, index) => ({
-            seasonId: selectedSeason.value,
-            seasonName: selectedSeasonName.value,
-            field_id: field.fieldId,
-            field_name: index === 0 ? field.name : '',
-            contour_id: contour.contourId,
-            contour_name: contour.name,
+            seasonId: seasonId,
+            seasonName: seasonName,
+            fieldId: field.id,
+            fieldName: index === 0 ? field.name : '',
+            // fieldDescription: index === 0 ? field.description : '',
+            contourId: contour.id,
+            contourName: contour.name, 
+            contourColor: contour.color,
             squareArea: contour.squareArea,
-            crop_rotations: contour.cropRotations.map(rotation => ({
-              cropRotationId: rotation.cropRotationId,
+            cropRotations: contour.cropRotations.map(rotation => ({
+              cropRotationId: rotation.id,
               culture: rotation.culture,
-              sort: rotation.cultivar,
-              start_date: rotation.startDate,
-              end_date: rotation.endDate
+              cultivar: rotation.cultivar,
+              startDate: rotation.startDate,
+              endDate: rotation.endDate,
+              description: rotation.description
             }))
-
           }));
         });
       } catch (error) {
@@ -183,9 +170,8 @@ export default {
       }
     };
 
-    // 跳转到编辑页面
     const navigateToEditPage = (contourId) => {
-      const contourData = fieldsData.value.find(row => row.contour_id === contourId);
+      const contourData = fieldsData.value.find(row => row.contourId === contourId);
       
       console.log('Selected Contour Data:', contourData);
 
@@ -195,22 +181,20 @@ export default {
           query: {
             seasonId: contourData.seasonId,
             seasonName: contourData.seasonName,
-            fieldId: contourData.field_id,
-            fieldName: contourData.field_name,
-            contourId: contourData.contour_id,
-            contourName: contourData.contour_name
+            fieldId: contourData.fieldId,
+            fieldName: contourData.fieldName,
+            contourId: contourData.contourId,
+            contourName: contourData.contourName
           }
         });
       }
     };
 
     return {
-      selectedSeason,
-      selectedSeasonName,
       seasons,
+      OnSeason,
       fieldsData,
       fieldsColumns,
-      onSeasonChange,
       fetchFields,
       navigateToEditPage,
       pagination
@@ -249,7 +233,7 @@ export default {
 .crop-rotations {
   display: flex;
   flex-direction: row;
-  gap: 16px; /* 控制多个作物之间的间距 */
+  gap: 16px;
 }
 
 .crop-rotation {
