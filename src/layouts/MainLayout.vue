@@ -85,7 +85,7 @@ export default {
         {
           title: 'Севооборот',
           icon: 'o_compost',
-          link: '/rotation'
+          link: '/season'
         },
 
         {

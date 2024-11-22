@@ -1,243 +1,285 @@
-
-  <template>
-    <q-page padding>
-      <div class="q-pa-md q-gutter-md">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6 q-mb-md">Фильтрация по датам</div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <q-form>
-              <q-input  
-                v-model="startDate"
-                label="Дата начала"
-                outlined
-                dense
-                class="q-mb-md"
-              >
-                <template v-slot:append>
-                  <q-icon name="event" class="cursor-pointer">
-                    <q-popup-proxy ref="qDateProxyStart" transition-show="scale" transition-hide="scale">
-                      <q-date v-model="startDate" @input="() => $refs.qDateProxyStart.hide()" />
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
-
-              <q-input
-                v-model="endDate"
-                label="Дата окончания"
-                outlined
-                dense
-                class="q-mb-md"
-              >
-                <template v-slot:append>
-                  <q-icon name="event" class="cursor-pointer">
-                    <q-popup-proxy ref="qDateProxyEnd" transition-show="scale" transition-hide="scale">
-                      <q-date v-model="endDate" :min="startDate" @input="() => $refs.qDateProxyEnd.hide()" />
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
-            </q-form>
-          </q-card-section>
-        </q-card>
-
-        <q-card class="q-mt-md">
-          <q-card-section>
-            <div class="text-h6 q-mb-md">Таблица Севооборота</div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            <q-table
-              class="q-mt-md"
-              virtual-scroll
-              flat
-              bordered
-              v-model:pagination="pagination"
-              :rows-per-page-options="[0]"
-              :virtual-scroll-sticky-size-start="48"
-              column-key="id"
-              :rows="filteredRows"
-              :columns="rotationColumns"
-              row-key="id"
-            >
-              <template v-slot:body-cell-row_number="props">
-                <q-td :props="props">
-                  {{ props.rowIndex + 1 }}
-                </q-td>
-              </template>
-              <template v-slot:body-cell-actions="props">
-                <q-td :props="props">
-                  <q-btn flat icon="delete" @click="deleteRow(props.row.id)" />
-                </q-td>
-              </template>
-              <template v-slot:body-cell-edit="props">
-                <q-td :props="props">
-                  <q-btn flat icon="launch" @click="navigateToPage(props.row.id)" />
-                </q-td>
-              </template>
-            </q-table>
-          </q-card-section>
-        </q-card>
+<template>
+  <div class="q-pa-md contour-info-container">
+    <div class="text-h6 font-bold">Добавление севооборота в контуре</div>
+    <div class="q-mt-md q-gutter-y-xs">
+      <div class="info-item row">
+        <span class="label col-auto text-subtitle1 font-bold">Сезон:</span>
+        <span class="value col text-subtitle1">{{ contourInfo.seasonName }}</span>
       </div>
-    </q-page>
-  </template>
-  <script>
-  import { ref, computed, onMounted, reactive } from 'vue';
-  import axios from 'axios';
-  import { userStore } from 'src/usage';
-  import { useQuasar } from 'quasar';
-  import { useRouter } from 'vue-router';
+      <div class="info-item row">
+        <span class="label col-auto text-subtitle1 font-bold">Поле:</span>
+        <span class="value col text-subtitle1">{{ contourInfo.fieldName }}</span>
+      </div>
+      <div class="info-item row">
+        <span class="label col-auto text-subtitle1 font-bold">Контур:</span>
+        <span class="value col text-subtitle1">{{ contourInfo.contourName }}</span>
+      </div>
+    </div>
 
-  // Функция для преобразования строки формата dd-MM-yyyy в объект Date
-  function parseDate(dateString) {
-    const [day, month, year] = dateString.split('-');
-    return new Date(`${year}-${month}-${day}`);
-  }
+    <q-expansion-item v-model="rotationExpanded" icon="eco" dense expand-separator class="q-mt-md full-width">
+      <template v-slot:header>
+        <div class="text-h6 font-bold">Севооборот</div>
+      </template>
+      
+      <div class="q-pa-md full-width">
+        <q-table
+          :rows="rotationData"
+          :columns="columns"
+          row-key="cropRotationId"
+          hide-bottom
+          flat
+          bordered
+          dense
+          class="custom-table full-width"
+        >
+          <template v-slot:body-cell-edit="props">
+            <q-td align="center">
+              <q-btn flat round dense icon="edit" color="primary" @click="editCropRotation(props.row)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-delete="props">
+            <q-td align="center">
+              <q-btn flat round dense icon="delete" color="negative" @click="confirmDelete(props.row.cropRotationId)" />
+            </q-td>
+          </template>
+        </q-table>
+        <div class="button-container">
+          <q-btn label="Добавить севооборот" @click="goToAddRotationPage" color="primary" class="add-rotation-button" />
+        </div>
+      </div>
+    </q-expansion-item>
 
-  export default {
-    setup() {
-      const startDate = ref('');
-      const endDate = ref('');
-      const $q = useQuasar();
-      const router = useRouter();
+    <q-dialog v-model="isDeleteDialogOpen" persistent>
+      <q-card>
+        <q-card-section class="text-h6">
+          Вы действительно хотите удалить этот объект?
+        </q-card-section>
 
-      const rotationData = reactive([]);
-      const rotationColumns = reactive([
-        { name: 'field_area', label: 'Название поля', align: 'center', field: 'field_area', sortable: true },
-        { name: 'culture', label: 'Культура', align: 'center', field: 'culture', sortable: true },
-        { name: 'start_time', label: 'Дата начала', align: 'center', field: 'start_time', sortable: true },
-        { name: 'end_time', label: 'Дата окончания', align: 'center', field: 'end_time', sortable: true },
-        { name: 'description', label: 'Описание', align: 'center', field: 'description' },
-        { name: 'edit', label: 'Редактировать', align: 'center', field: row => row.id, format: val => `${val}` },
-        { name: 'actions', label: 'Удалить', align: 'center', field: row => row.id, format: val => `${val}` }
-      ]);
+        <q-card-actions align="right">
+          <q-btn flat label="Нет" color="primary" @click="isDeleteDialogOpen = false" />
+          <q-btn flat label="Да" color="negative" @click="deleteCropRotation" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+  </div>
+</template>
 
-      const accessToken = userStore.state.access_token;
+<script>
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import { useQuasar } from 'quasar';
+import { useRouter } from 'vue-router';
+import { userStore } from 'src/usage';
 
-      async function deleteRow(rowId) {
-        try {
-          const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/fields/crop-rotations?id=${rowId}`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
-            }
-          });
+export default {
+  name: 'RotationPage',
+  setup() {
+    const $q = useQuasar();
+    const router = useRouter();
+    const accessToken = computed(() => userStore.state.access_token);
 
-          if (response.status === 204) {
-            $q.notify({
-              color: 'green-5',
-              textColor: 'white',
-              icon: 'check',
-              message: 'Удалено'
-            });
-            rotationData.splice(rotationData.findIndex(row => row.id === rowId), 1);
-          } else {
-            console.error('Error deleting row:', response);
+    const contourInfo = ref({
+      seasonName: router.currentRoute.value.query.seasonName || 'Unknown Season',
+      fieldName: router.currentRoute.value.query.fieldName || 'Unknown Field',
+      contourName: router.currentRoute.value.query.contourName || 'Unknown Contour',
+      contourId: router.currentRoute.value.query.contourId
+    });
+
+    const rotationExpanded = ref(true);
+    const rotationData = ref([]);
+    const columns = [
+      { name: 'culture', label: 'Культура', align: 'left', field: 'culture', sortable: true },
+      { name: 'cultivar', label: 'Сорт', align: 'left', field: 'cultivar', sortable: true },
+      { name: 'description', label: 'Описание', align: 'left', field: 'description', sortable: true },
+      { name: 'startDate', label: 'Дата начала', align: 'left', field: 'startDate', sortable: true },
+      { name: 'endDate', label: 'Дата окончания', align: 'left', field: 'endDate', sortable: true },
+      { name: 'edit', label: 'Редактировать', align: 'center', field: 'edit', sortable: false },
+      { name: 'delete', label: 'Удалить', align: 'center', field: 'delete', sortable: false }
+    ];
+
+    const isDeleteDialogOpen = ref(false);
+    const selectedCropRotationId = ref(null);
+
+    const fetchRotationData = async () => {
+      const contourId = contourInfo.value.contourId;
+      if (!contourId) {
+        console.error('Invalid contour ID');
+        return;
+      }
+      try {
+        const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/contours/${contourId}/crop-rotations`, {
+          headers: {
+            Authorization: `Bearer ${accessToken.value}`,
+            'Content-Type': 'application/json'
           }
-        } catch (error) {
-          console.error('Error during API call:', error);
-        }
+        });
+        rotationData.value = response.data.map(item => ({
+          cropRotationId: item.id,
+          culture: item.culture,
+          cultivar: item.cultivar || 'N/A',
+          description: item.description,
+          startDate: item.startDate,
+          endDate: item.endDate
+        }));
+      } catch (error) {
+        console.error('Failed to fetch rotation data:', error);
+        $q.notify({
+          type: 'negative',
+          message: 'Failed to load rotation data. Please try again later.',
+          icon: 'error'
+        });
       }
+    };
 
-      async function navigateToPage(rowId) {
-        router.push({ path: '/fetch_rotation', query: { id: rowId } });
-      }
+    const confirmDelete = (cropRotationId) => {
+      selectedCropRotationId.value = cropRotationId;
+      isDeleteDialogOpen.value = true;
+    };
 
-      onMounted(async () => {
-        const accessToken = userStore.state.access_token;
+    const deleteCropRotation = async () => {
+      try {
+        const cropRotationId = selectedCropRotationId.value;
+        const response = await axios.delete(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/crop-rotation`, {
+          params: { cropRotationId },
+          headers: {
+            Authorization: `Bearer ${accessToken.value}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-        if (!accessToken) {
-          console.log('No access token available');
+        if (response.status === 200) {
+          $q.notify({
+            type: 'positive',
+            message: 'Crop rotation deleted successfully!',
+            icon: 'check_circle'
+          });
+          await fetchRotationData();
+        } else {
           $q.notify({
             type: 'negative',
-            message: 'Залогиньтесь, пожалуйста'
+            message: 'Failed to delete crop rotation.',
+            icon: 'error'
           });
-          return;
         }
-
-        try {
-          const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields/crop-rotations/organization`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          const data = response.data;
-          console.log(data);
-
-          if (data) {
-            data.forEach(item => {
-              rotationData.push({
-                id: item.id,
-                culture: item.crop.name,
-                field_area: item.field.fieldName,
-                start_time: item.startDate,
-                end_time: item.endDate,
-                description: item.description
-              });
-            });
-          }
-        } catch (error) {
-          console.error('Wrong API', error);
-        }
-      });
-
-      const filteredRows = computed(() => {
-        return rotationData.filter(row => {
-          const rowStart = parseDate(row.start_time);
-          const rowEnd = parseDate(row.end_time);
-
-          const startMatch = startDate.value ? parseDate(startDate.value) <= rowStart : true;
-          const endMatch = endDate.value ? parseDate(endDate.value) >= rowEnd : true;
-
-          return startMatch && endMatch;
+      } catch (error) {
+        console.error('Failed to delete crop rotation:', error);
+        $q.notify({
+          type: 'negative',
+          message: 'Failed to delete crop rotation. Please try again later.',
+          icon: 'error'
         });
+      } finally {
+        isDeleteDialogOpen.value = false;
+        selectedCropRotationId.value = null;
+      }
+    };
+
+    const editCropRotation = (cropRotation) => {
+      router.push({
+        name: 'add_rotation',
+        query: {
+          contourId: contourInfo.value.contourId,
+          seasonName: contourInfo.value.seasonName,
+          fieldName: contourInfo.value.fieldName,
+          contourName: contourInfo.value.contourName,
+          cropRotationId: cropRotation.cropRotationId,
+          culture: cropRotation.culture,
+          cultivar: cropRotation.cultivar,
+          description: cropRotation.description,
+          startDate: cropRotation.startDate,
+          endDate: cropRotation.endDate
+        }
       });
+    };
 
-      return {
-        navigateToPage,
-        deleteRow,
-        rotationColumns,
-        rotationData,
-        startDate,
-        endDate,
-        filteredRows,
-        pagination: ref({ rowsPerPage: 1000 })
-      };
-    }
-  };
-  </script>
+    onMounted(() => {
+      fetchRotationData();
+    });
 
-  <style scoped>
-  .q-pa-md {
-    padding: 16px;
+    const goToAddRotationPage = () => {
+      router.push({
+        name: 'add_rotation',
+        query: {
+          contourId: contourInfo.value.contourId,
+          seasonName: contourInfo.value.seasonName,
+          fieldName: contourInfo.value.fieldName,
+          contourName: contourInfo.value.contourName
+        }
+      });
+    };
+
+    return {
+      contourInfo,
+      rotationExpanded,
+      rotationData,
+      columns,
+      isDeleteDialogOpen,
+      selectedCropRotationId,
+      goToAddRotationPage,
+      confirmDelete,
+      deleteCropRotation,
+      editCropRotation
+    };
   }
+};
+</script>
 
-  .q-gutter-md [class*=" q-"] {
-    margin-bottom: 16px;
-  }
+<style scoped>
+.contour-info-container {
+  max-width: 100%;
+  margin-left: 0;
+}
 
-  .q-card {
-    background-color: #f9f9f9;
-  }
+.full-width {
+  width: 100%;
+}
 
-  .q-card-section {
-    padding: 16px;
-  }
+.text-h6 {
+  font-size: 1.25rem;
+  color: #333;
+}
 
-  .q-separator {
-    margin: 16px 0;
-  }
+.font-bold {
+  font-weight: bold;
+}
 
-  .q-mt-md {
-    margin-top: 16px;
-  }
+.info-item {
+  align-items: center;
+  font-size: 1.2rem;
+}
 
-  .q-mb-md {
-    margin-bottom: 16px;
-  }
-  </style>
+.label {
+  font-weight: bold;
+  width: 100px;
+}
 
+.value {
+  flex-grow: 1;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.add-rotation-button {
+  width: 200px;
+  background-color: #2e2e2e;
+  color: #fff;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.custom-table .q-table__title,
+.custom-table .q-table__cell {
+  font-size: 1.1rem;
+  padding: 8px;
+}
+
+.q-table__title {
+  font-weight: bold;
+  color: #333;
+}
+</style>

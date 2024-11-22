@@ -38,9 +38,24 @@ const routes = [
         component: () => import("pages/CulturePage.vue"),
       },
       {
+        path: "season",
+        name: "SeasonPage",
+        component: () => import("pages/Season_page.vue"),
+      },
+      {
+        path: "add_rotation",
+        name: "add_rotation",
+        component: () => import("pages/Rotation_add_page.vue")
+      },
+      {
         path: "rotation",
-        name: "rotation",
-        component: () => import("pages/RotationPage.vue"),
+        name: "RotationPage",
+        component: () => import("pages/RotationPage.vue")
+      },
+      {
+        path: "field_weather_info",
+        name: "FieldWeatherInfoPage",
+        component: () => import("pages/Field_weatherInfo_page.vue")
       },
       {
         path: "workers",
