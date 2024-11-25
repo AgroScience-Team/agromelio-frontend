@@ -107,7 +107,8 @@ export default {
         return;
       }
       try {
-        const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/contours/${contourId}/crop-rotations`, {
+        const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/v2/fields-service/contours/${contourId}/crop-rotations`, {
+        // const response = await axios.get(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/contours/${contourId}/crop-rotations`, {
           headers: {
             Authorization: `Bearer ${accessToken.value}`,
             'Content-Type': 'application/json'
@@ -139,7 +140,8 @@ export default {
     const deleteCropRotation = async () => {
       try {
         const cropRotationId = selectedCropRotationId.value;
-        const response = await axios.delete(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/crop-rotation`, {
+        const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/v2/fields-service/crop-rotation`, {
+        // const response = await axios.delete(`https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service/crop-rotation`, {
           params: { cropRotationId },
           headers: {
             Authorization: `Bearer ${accessToken.value}`,

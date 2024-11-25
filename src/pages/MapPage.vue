@@ -1,7 +1,6 @@
 <template>
   <div class="map-container">
     <div id="map"></div>
-
     <!-- 颜色选择对话框 -->
     <!-- Диалог выбора цвета -->
     <q-dialog v-model="colorDialog" persistent >
@@ -25,24 +24,6 @@
       class="add-field-button"
       @click="goToAddPage"
     />
-
-    <!-- если хоть один сезон есть, скрыть -->
-    <!-- <q-btn v-if="seasonsList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
-      <div class="button-overlay">
-        <p>Добавить сезон</p>
-      </div>
-    </q-btn> -->
-    <!-- если хоть одно поле есть, скрыть -->
-    <!-- <q-btn v-if="fieldList.length === 0" fab color="primary" icon="add" class="add-button" @click="goToSeasonPage">
-      <div class="button-overlay">
-        <p>Добавить поле</p>
-      </div>
-    </q-btn> -->
-    <!-- кнопки для редактирования -->
-    <!-- <map-page-edit-buttons v-else></map-page-edit-buttons> -->
-    <!-- выбор сезона и поля из списка -->
-    <dropdown-or-add-season-field-buttons></dropdown-or-add-season-field-buttons>
-
   </div>
 </template>
 
@@ -56,14 +37,9 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import { useQuasar } from "quasar";
 import { userStore } from "src/usage";
-
 import * as turf from "@turf/turf";
 
-
-import DropdownOrAddSeasonFieldButtons from "src/components/DropdownOrAddSeasonFieldButtons.vue";
-
 export default {
-  components: {DropdownOrAddSeasonFieldButtons },
   name: "MapComponent",
   setup() {
     const map = ref(null);
@@ -294,10 +270,7 @@ export default {
 
       // 加载已有多边形 Загрузка существующих полигонов
       fetchDataAndDrawPolygons();
-      axios.get()
-
     });
-
 
     return {
       map,
@@ -307,20 +280,11 @@ export default {
       cancelColorSelection,
       applyColorSelection,
     };
-
-    // Переход к странице добавления поля
-    // const goToAddPage = () => {
-    //   router.push("/add_field");
-    // };
-
-    return { map};
-
   },
 };
 </script>
 
 <style>
-
 .map-container {
   position: relative;
   height: 100vh;
@@ -360,83 +324,4 @@ export default {
 .details-button:hover {
   background-color: #0056b3;
 }
-
-  .map-container {
-    position: relative;
-    height: 100vh;
-    width: 100%;
-  }
-
-  #map {
-    height: 100vh !important;
-    width: 100% !important;
-  }
-
-
-
-
-  .leaflet-top.leaflet-left {
-    top: 120px;
-  }
-
-  .popup-content {
-    font-family: Arial, sans-serif;
-    max-width: 300px;
-    padding: 10px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .popup-content .field-name {
-    font-size: 18px;
-    color: #333;
-    margin-bottom: 5px;
-  }
-
-  .popup-content .crop-name {
-    font-size: 16px;
-    color: #666;
-    margin-bottom: 10px;
-  }
-
-  .popup-content .field-description {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 10px;
-  }
-
-  .popup-content .details-button {
-    display: inline-block;
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    background-color: #007bff;
-    color: #ffffff;
-    text-align: center;
-    border-radius: 5px;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .popup-content .details-button:hover {
-    background-color: #0056b3;
-  }
-
-  .popup-content .meteo-data {
-    margin-top: 10px;
-  }
-
-  .meteo-item {
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 5px;
-  }
-
-  .meteo-icon {
-    margin-right: 5px;
-    color: #007bff;
-  }
-
 </style>
