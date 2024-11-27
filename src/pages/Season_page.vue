@@ -6,16 +6,26 @@
           <div class="text-h6">Севооборот</div>
         </q-card-section>
         <q-card-section>
-          <q-select
-            v-model="OnSeason"
-            label="Выбор сезона"
-            :options="seasons"
-            option-value="value"
-            option-label="label"
-            dense
-            outlined
-            @update:model-value="fetchFields"
-          />
+          <div class="row justify-between items-center">
+            <q-select
+              v-model="OnSeason"
+              label="Выбор сезона"
+              :options="seasons"
+              option-value="value"
+              option-label="label"
+              dense
+              outlined
+              class="season-select"
+              @update:model-value="fetchFields"
+            />
+            <q-btn
+              icon="add"
+              label="Добавить сезон"
+              color="primary"
+              class="add-season-btn button-common"
+              @click="navigateToAddSeason"
+            />
+          </div>
         </q-card-section>
       </q-card>
 
@@ -33,14 +43,13 @@
               row-key="contourId"
               class="fixed-table"
             >
-              <!-- 第一列 -->
+
               <template v-slot:body-cell-fieldName="props">
                 <q-td :props="props" class="field-name-cell">
                   {{ props.row.fieldName }}
                 </q-td>
               </template>
 
-              <!-- 第二列 -->
               <template v-slot:body-cell-contours="props">
                 <q-td :props="props" class="contours-cell">
                   <div :style="{ color: ensureColorFormat(props.row.contourColor) }">
@@ -55,7 +64,6 @@
                 </q-td>
               </template>
 
-              <!-- 第三列 -->
               <template v-slot:body-cell-cropRotations="props">
                 <q-td :props="props" class="crop-rotations-cell">
                   <div class="crop-rotations">
@@ -329,6 +337,10 @@ export default {
       }
     });
 
+    const navigateToAddSeason = () => {
+      router.push({ name: 'add_season' });
+    };
+
     const fetchFields = async (OnSeason) => {
       if (!OnSeason || !OnSeason.value) return;
       const seasonId = OnSeason.value;
@@ -343,7 +355,6 @@ export default {
 
         const data = response.data;
 
-        // 如果数据为空或结构不符合预期，使用假数据
         if (!data || !Array.isArray(data) || data.length === 0) {
           fieldsData.value = fakeData.flatMap(field => {
             return field.contours.map((contour, index) => ({
@@ -366,7 +377,6 @@ export default {
             }));
           });
         } else {
-          // 正常加载数据
           fieldsData.value = data.flatMap(field => {
             return field.contours.map((contour, index) => ({
               seasonId: seasonId,
@@ -395,7 +405,6 @@ export default {
           icon: 'warning'
         });
 
-        // 在请求失败时也使用假数据
         fieldsData.value = fakeData.flatMap(field => {
           return field.contours.map((contour, index) => ({
             seasonId: "mock-season-id",
@@ -462,7 +471,8 @@ export default {
       calculateTimelineWidth,
       formatDate,
       ensureColorFormat,
-      navigateToEditPage
+      navigateToEditPage,
+      navigateToAddSeason
     };
   }
 };
@@ -470,21 +480,48 @@ export default {
 
 
 <style scoped>
-/* 表格容器 */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.season-select {
+  width: 200px;
+}
+.button-common {
+  width: 220px;
+  height: 60px;
+  background-color: #2e3a4b;
+  color: #ffffff; 
+  font-size: 1rem;
+  border-radius: 10px; 
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); 
+  text-transform: none; 
+  padding: 0 16px; 
+  font-weight: 500; 
+  letter-spacing: 0.5px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 6px; 
+  transition: all 0.2s ease-in-out;
+}
+
+
 .table-scroll-container {
   width: 100%;
-  overflow-x: auto; /* 启用横向滚动 */
+  overflow-x: auto;
   position: relative;
 }
 
-/* 表格基础样式 */
 .fixed-table {
-  table-layout: fixed; /* 固定布局 */
+  table-layout: fixed;
   width: 100%;
-  min-width: 1200px; /* 确保表格至少有足够的宽度 */
+  min-width: 1200px;
 }
 
-/* 表头样式 */
 .fixed-table thead th {
   background-color: #f5f5f5;
   font-weight: bold;
@@ -496,18 +533,16 @@ export default {
   padding: 12px;
 }
 
-/* 第三列表头保持左对齐并向右移动 */
 .fixed-table thead th.crop-rotations-header {
   position: sticky;
-  left: 600px; /* 假设前两列的总宽度为600px，这样保证第三列的表头保持在右侧 */
+  left: 600px; 
   z-index: 3;
   background-color: #f5f5f5;
-  text-align: left; /* 左对齐 */
-  padding-left: 20px; /* 向右移动一定的距离 */
-  transform: translateX(20px); /* 可以使用transform调整进一步细化位置 */
+  text-align: left;
+  padding-left: 20px; 
+  transform: translateX(20px); 
 }
 
-/* 第一列 - 固定宽度 */
 .field-name-cell {
   width: 240px;
   min-width: 240px;
@@ -517,7 +552,6 @@ export default {
   padding: 12px;
 }
 
-/* 第二列 - 固定宽度 */
 .contours-cell {
   width: 360px;
   min-width: 360px;
@@ -527,7 +561,6 @@ export default {
   padding: 12px;
 }
 
-/* 第三列 - 基础宽度 + 可扩展 */
 .crop-rotations-cell {
   min-width: 600px;
   width: auto;
@@ -535,25 +568,22 @@ export default {
   padding: 12px;
 }
 
-/* 作物轮作容器 */
 .crop-rotations {
   display: inline-flex;
   flex-wrap: nowrap;
-  gap: 80px; /* 增加作物之间的间距 */
+  gap: 80px; 
   padding-right: 24px;
   align-items: center;
 }
 
-/* 作物轮作项目 */
 .crop-rotation-item {
   flex: 0 0 auto;
   min-width: 250px;
   text-align: center;
   position: relative;
-  margin-bottom: 20px; /* 增加作物项目之间的垂直间隔 */
+  margin-bottom: 20px;
 }
 
-/* 作物名称 */
 .crop-name {
   margin-bottom: 8px;
   white-space: nowrap;
@@ -561,7 +591,6 @@ export default {
   text-align: center;
 }
 
-/* 时间线容器 */
 .timeline {
   display: flex;
   align-items: center;
@@ -571,7 +600,6 @@ export default {
   min-width: 200px;
 }
 
-/* 时间线点 */
 .timeline-dot {
   width: 8px;
   height: 8px;
@@ -579,20 +607,19 @@ export default {
   border-radius: 50%;
   z-index: 2;
   flex-shrink: 0;
-  margin-left: -3px; /* 将点与时间线的距离拉近 */
-  margin-right: -3px; /* 将点与时间线的距离拉近 */
+  margin-left: -3px;
+  margin-right: -3px; 
 }
 
-/* 时间线 */
+
 .timeline-line {
   height: 2px;
   background-color: #2196F3;
-  margin: 0 6px; /* 减少时间点和线之间的距离 */
-  min-width: 50px; /* 保证线的最小宽度 */
+  margin: 0 6px;
+  min-width: 50px; 
   flex-grow: 1;
 }
 
-/* 时间日期标签 */
 .timeline-date {
   font-size: 0.75em;
   background-color: white;
@@ -600,33 +627,30 @@ export default {
   border-radius: 2px;
   white-space: nowrap;
   position: absolute;
-  top: 14px; /* 保证时间线点下方一定距离 */
+  top: 14px; 
   z-index: 3;
 }
 
-/* 开始日期 */
+
 .timeline-date.left {
   transform: translateX(-50%);
 }
 
-/* 结束日期 */
 .timeline-date.right {
   transform: translateX(50%);
-  right: 0; /* 保证结束时间显示在正确位置 */
+  right: 0; 
 }
 
-/* 编辑按钮样式 */
+
 .q-btn.flat {
   margin-left: 8px;
   padding: 4px;
 }
 
-/* 确保表格边框正确显示 */
 .q-table {
   border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-/* 删除表格中竖着的线 */
 .q-td {
   border-right: none;
 }

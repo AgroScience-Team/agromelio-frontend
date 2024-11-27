@@ -406,7 +406,6 @@ export default {
           icon: 'error'
         });
 
-        // 请求失败时使用假数据
         rotationData.value = fakeRotationData.map(item => ({
           cropRotationId: item.id,
           culture: item.culture,
@@ -440,12 +439,10 @@ export default {
         let data = response.data;
     
         if (data.length > 0) {
-          // 按日期排序
           const sortedData = [...data].sort((a, b) => 
             new Date(a.sampleDate) - new Date(b.sampleDate)
           );
     
-          // 生成列配置
           const dataColumns = sortedData.map(item => ({
             name: item.id,
             label: item.sampleDate,
@@ -454,13 +451,11 @@ export default {
             sortable: true
           }));
     
-          // 设置列
           soilColumns.value = [
             { name: 'parameter', label: 'Параметр', align: 'left', field: 'parameter', sortable: false },
             ...dataColumns
           ];
     
-          // 生成行数据
           soilData.value = soilParameters.map(param => {
             const row = { parameter: param.name };
             sortedData.forEach(item => {
@@ -469,7 +464,6 @@ export default {
             return row;
           });
     
-          // 添加编辑和删除行
           soilData.value.push({ parameter: 'edit' });
           soilData.value.push({ parameter: 'delete' });
         }
@@ -481,12 +475,10 @@ export default {
           icon: 'error',
         });
     
-        // 使用假数据
         const sortedData = [...fakeSoilData].sort((a, b) => 
           new Date(a.sampleDate) - new Date(b.sampleDate)
         );
     
-        // 使用ID生成列
         const dataColumns = sortedData.map(item => ({
           name: item.id,
           label: item.sampleDate,
@@ -495,13 +487,11 @@ export default {
           sortable: true
         }));
     
-        // 设置列
         soilColumns.value = [
           { name: 'parameter', label: 'Параметр', align: 'left', field: 'parameter', sortable: false },
           ...dataColumns
         ];
     
-        // 生成行数据
         soilData.value = soilParameters.map(param => {
           const row = { parameter: param.name };
           sortedData.forEach(item => {
@@ -510,7 +500,6 @@ export default {
           return row;
         });
     
-        // 添加编辑和删除行
         soilData.value.push({ parameter: 'edit' });
         soilData.value.push({ parameter: 'delete' });
       }
@@ -543,22 +532,19 @@ export default {
     };
 
     const confirmDelete = (itemId, itemType = 'cropRotation') => {
-      // 根据类型设置对应的选中 ID 和类型
-      deleteType.value = itemType; // 保存当前删除类型
+      deleteType.value = itemType; 
       if (itemType === 'cropRotation') {
         selectedCropRotationId.value = itemId;
       } else if (itemType === 'soilComposition') {
         selectedSoilInfoId.value = itemId;
       }
 
-      // 打开确认删除对话框
       isDeleteDialogOpen.value = true;
     };
 
     const deleteItem = async () => {
       try {
         if (deleteType.value === 'cropRotation') {
-          // 删除轮作信息
           const cropRotationId = selectedCropRotationId.value;
           const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/fields-service/crop-rotation`, {
             params: { cropRotationId },
@@ -574,12 +560,12 @@ export default {
               message: 'Crop rotation deleted successfully!',
               icon: 'check_circle',
             });
-            await fetchRotationData(); // 重新加载轮作数据
+            await fetchRotationData(); 
           } else {
             throw new Error('Failed to delete crop rotation.');
           }
         } else if (deleteType.value === 'soilComposition') {
-          // 删除土壤信息
+
           const soilCompositionId = selectedSoilInfoId.value;
           const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/fields-service/soil-composition`, {
             params: { soilCompositionId },
@@ -595,7 +581,7 @@ export default {
               message: 'Информация о почве успешно удалена!',
               icon: 'check_circle',
             });
-            await fetchSoilData(); // 重新加载土壤数据
+            await fetchSoilData(); 
           } else {
             throw new Error('Failed to delete soil composition.');
           }
@@ -611,7 +597,7 @@ export default {
         isDeleteDialogOpen.value = false;
         selectedCropRotationId.value = null;
         selectedSoilInfoId.value = null;
-        deleteType.value = null; // 重置删除类型
+        deleteType.value = null; 
       }
     };
 
@@ -621,15 +607,14 @@ export default {
         return;
       }
 
-      // 跳转到编辑页面，并传递所需的查询参数
       router.push({
-        name: 'add_soil', // 假设编辑土地信息的路由名称是 "add_soil"
+        name: 'add_soil', 
         query: {
-          contourId: contourInfo.value.contourId, // 当前轮廓 ID
-          seasonName: contourInfo.value.seasonName, // 当前季节名称
-          fieldName: contourInfo.value.fieldName, // 当前字段名称
-          contourName: contourInfo.value.contourName, // 当前轮廓名称
-          soilInfoId: soilInfo.id, // 土壤信息的唯一 ID
+          contourId: contourInfo.value.contourId, 
+          seasonName: contourInfo.value.seasonName, 
+          fieldName: contourInfo.value.fieldName, 
+          contourName: contourInfo.value.contourName, 
+          soilInfoId: soilInfo.id, 
           ph: soilInfo.ph,
           sampleDate: soilInfo.sampleDate,
           organicMatter: soilInfo.organicMatter,
@@ -723,14 +708,14 @@ export default {
 </script>
 
 <style scoped>
-/* 页面整体滚动 */
+
 html, body {
   height: 100%;
-  overflow-y: auto; /* 启用垂直滚动 */
+  overflow-y: auto;
   margin: 0;
 }
 
-/* 容器基础样式 */
+
 .contour-info-container {
   max-width: 100%;
   margin-left: 0;
@@ -740,14 +725,12 @@ html, body {
   width: 100%;
 }
 
-/* 标题样式 */
 .text-h6 {
   font-size: 1.25rem;
   color: #333;
   font-weight: bold;
 }
 
-/* 信息项样式 */
 .info-item {
   align-items: center;
   font-size: 1.2rem;
@@ -762,43 +745,43 @@ html, body {
   flex-grow: 1;
 }
 
-/* 按钮容器 */
+
 .button-container {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
 }
 
-/* 统一按钮样式 */
+
 .button-common {
-  width: 200px; /* 确保宽度一致 */
-  background-color: #2e2e2e; /* 使用深色背景 */
-  color: #fff; /* 白色文字 */
-  font-size: 1.1rem; /* 字体大小一致 */
-  border-radius: 8px; /* 按钮圆角 */
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* 添加阴影 */
-  text-transform: none; /* 禁止文字大写 */
+  width: 200px; 
+  background-color: #2e2e2e; 
+  color: #fff; 
+  font-size: 1.1rem; 
+  border-radius: 8px; 
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  text-transform: none;
 }
 
 
 .table-scroll-container {
-  overflow-x: auto; /* 启用水平滚动 */
-  white-space: nowrap; /* 防止换行 */
+  overflow-x: auto; 
+  white-space: nowrap; 
   border: 1px solid #ccc;
   padding: 8px;
   margin-top: 16px;
 }
 
 .custom-table .q-table__cell {
-  max-width: 5000px !important; /* 每列最大宽度 */
+  max-width: 5000px !important;
   min-width: 5000px !important;
-  text-overflow: ellipsis; /* 超出部分显示省略号 */
-  overflow: hidden; /* 超出部分隐藏 */
-  white-space: nowrap; /* 不允许换行 */
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .custom-table .q-table__title {
-  max-width: 5000px; /* 每列最大宽度 */
+  max-width: 5000px;
   min-width: 5000px;
   text-overflow: ellipsis;
   overflow: hidden;
