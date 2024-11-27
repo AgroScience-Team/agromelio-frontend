@@ -8,7 +8,7 @@
         <q-card-section>
           <div>
             <h5>Выберите цвет полигона</h5>
-            <input type="color" v-model="selectedColor" />
+            <q-color v-model="selectedColor" />
           </div>
         </q-card-section>
         <q-card-actions align="right">
@@ -192,7 +192,6 @@ export default {
         const newPolygonColor = selectedColor.value;
         console.log("Координаты текущего нарисованного контура:", newPolygon.geometry.coordinates);
 
-
         let isOverlap = false;
 
         drawnItems.eachLayer((existingLayer) => {
@@ -283,6 +282,7 @@ export default {
   },
 };
 </script>
+
 
 <style>
 .map-container {

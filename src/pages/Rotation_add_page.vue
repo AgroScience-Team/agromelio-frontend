@@ -21,8 +21,8 @@
       <q-input v-model="formData.culture" label="Название культуры" outlined dense class="q-mb-md"></q-input>
       <q-input v-model="formData.cultivar" label="Название сорта" outlined dense class="q-mb-md"></q-input>
       <q-input v-model="formData.description" label="Описание" outlined dense class="q-mb-md"></q-input>
-      <q-input v-model="formData.startDate" label="Дата сева" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
-      <q-input v-model="formData.endDate" label="Дата уборки" hint="Формат: DD-MM-YYYY" mask="##-##-####" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.startDate" label="Дата сева" hint="Формат: YYYY-MM-DD" mask="####-##-##" outlined dense class="q-mb-md"></q-input>
+      <q-input v-model="formData.endDate" label="Дата уборки" hint="Формат: YYYY-MM-DD" mask="####-##-##" outlined dense class="q-mb-md"></q-input>
     </div>
 
     <div class="button-section q-mt-md row no-gutters items-center">
@@ -79,7 +79,8 @@ export default {
     };
 
     const saveRotation = async () => {
-      const apiUrl = `https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service`;
+      // const apiUrl = `https://34a97d79-460b-4dae-9ff7-1fdaa35a4031.mock.pstmn.io/api/v2/fields-service`;
+      const apiUrl = `${process.env.VUE_APP_BASE_URL}/api/fields-service`;
       const payload = {
         startDate: formData.value.startDate,     
         endDate: formData.value.endDate,         
