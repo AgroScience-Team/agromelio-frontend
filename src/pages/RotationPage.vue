@@ -34,12 +34,26 @@
         >
           <template v-slot:body-cell-edit="props">
             <q-td align="center">
-              <q-btn flat round dense icon="edit" color="primary" @click="editCropRotation(props.row)" />
+              <q-btn
+                flat
+                round
+                dense
+                icon="edit"
+                color="primary"
+                @click="editCropRotation(props.row)"
+              />
             </q-td>
           </template>
           <template v-slot:body-cell-delete="props">
             <q-td align="center">
-              <q-btn flat round dense icon="delete" color="negative" @click="confirmDelete(props.row.cropRotationId)" />
+              <q-btn
+                flat
+                round
+                dense
+                icon="delete"
+                color="negative"
+                @click="confirmDelete(props.row.cropRotationId, 'cropRotation')"
+              />
             </q-td>
           </template>
         </q-table>
@@ -55,32 +69,61 @@
       </template>
 
       <div class="q-pa-md full-width">
-        <!-- 表格容器 -->
         <div class="table-scroll-container">
           <q-table
             flat
             bordered
             dense
             class="custom-table"
-            :rows="soilData" 
+            :rows="[...soilData]"
             :columns="soilColumns"
             row-key="parameter"
             :rows-per-page-options="[0]"
             style="table-layout: fixed;"
           >
-            <!-- 自定义单元格 -->
             <template v-slot:body="props">
-              <q-tr>
-                <!-- 第一列：显示参数名称 -->
+              <q-tr v-if="props.row.parameter !== 'edit' && props.row.parameter !== 'delete'">
                 <q-td>{{ props.row.parameter }}</q-td>
-
-                <!-- 动态生成采样日期列 -->
                 <q-td
                   v-for="(column, index) in soilColumns.slice(1)"
                   :key="index"
                   align="center"
                 >
-                  {{ props.row[column.name] || '—' }} <!-- 缺失数据用占位符显示 -->
+                  {{ props.row[column.name] || '—' }}
+                </q-td>
+              </q-tr>
+
+              <q-tr v-else-if="props.row.parameter === 'edit'">
+                <q-td>Редактировать</q-td>
+                <q-td
+                  v-for="(column, index) in soilColumns.slice(1)"
+                  :key="index"
+                  align="center"
+                >
+                  <q-icon
+                    name="edit"
+                    color="primary"
+                    size="md"
+                    class="cursor-pointer"
+                    @click="editSoilInfo(getSoilInfoById(column.name))"
+                  />
+                </q-td>
+              </q-tr>
+
+              <q-tr v-else-if="props.row.parameter === 'delete'">
+                <q-td>Удалить</q-td>
+                <q-td
+                  v-for="(column, index) in soilColumns.slice(1)"
+                  :key="index"
+                  align="center"
+                >
+                  <q-icon
+                    name="delete"
+                    color="negative"
+                    size="md"
+                    class="cursor-pointer"
+                    @click="confirmDelete(column.name, 'soilComposition')"
+                  />
                 </q-td>
               </q-tr>
             </template>
@@ -89,14 +132,13 @@
         <div class="button-container">
           <q-btn
             label="Добавить данные о составе почвы"
-            @click="goToAddSoilInfoPage"
+            @click="goToAddSoilPage"
             color="primary"
             class="button-common"
           />
         </div>
       </div>
     </q-expansion-item>
-
 
     <q-dialog v-model="isDeleteDialogOpen" persistent>
       <q-card>
@@ -106,7 +148,7 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Нет" color="primary" @click="isDeleteDialogOpen = false" />
-          <q-btn flat label="Да" color="negative" @click="deleteCropRotation" />
+          <q-btn flat label="Да" color="negative" @click="deleteItem()" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -137,6 +179,7 @@ export default {
     const rotationExpanded = ref(true);
     const rotationData = ref([]);
     const soilExpanded = ref(false);
+    const deleteType = ref(null);
 
     const columns = [
       { name: 'culture', label: 'Культура', align: 'left', field: 'culture', sortable: true },
@@ -166,12 +209,15 @@ export default {
     ];
 
     const soilColumns = ref([
-      { name: 'parameter', label: 'Параметр', align: 'left', field: 'parameter', sortable: false }
+      { name: 'parameter', label: 'Параметр', align: 'left', field: 'parameter', sortable: false },
+      { name: 'edit', label: 'Редактировать', align: 'center', field: 'edit', sortable: false },
+      { name: 'delete', label: 'Удалить', align: 'center', field: 'delete', sortable: false },
     ]);
     const soilData = ref([]);
 
     const isDeleteDialogOpen = ref(false);
     const selectedCropRotationId = ref(null);
+    const selectedSoilInfoId = ref(null);
 
     // fake data
     const fakeRotationData = [
@@ -374,120 +420,233 @@ export default {
 
     const fetchSoilData = async () => {
       const contourId = contourInfo.value.contourId;
-
+    
       if (!contourId || contourId === 'Unknown Contour ID') {
         console.error('Invalid contour ID');
         return;
       }
-
+    
       try {
-        const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields-service/contours/${contourId}/soil-compositions`, {
-          headers: {
-            Authorization: `Bearer ${accessToken.value}`,
-            'Content-Type': 'application/json'
+        const response = await axios.get(
+          `${process.env.VUE_APP_BASE_URL}/api/fields-service/contours/${contourId}/soil-compositions`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken.value}`,
+              'Content-Type': 'application/json',
+            },
           }
-        });
-
-        const data = response.data;
-
+        );
+    
+        let data = response.data;
+    
         if (data.length > 0) {
-          // 处理从 API 获取的实际数据
-          const dateColumns = [...new Set(data.map(item => item.sampleDate))].map(date => ({
-            name: date,
-            label: date,
+          // 按日期排序
+          const sortedData = [...data].sort((a, b) => 
+            new Date(a.sampleDate) - new Date(b.sampleDate)
+          );
+    
+          // 生成列配置
+          const dataColumns = sortedData.map(item => ({
+            name: item.id,
+            label: item.sampleDate,
             align: 'center',
-            field: date,
+            field: item.id,
             sortable: true
           }));
-
+    
+          // 设置列
           soilColumns.value = [
             { name: 'parameter', label: 'Параметр', align: 'left', field: 'parameter', sortable: false },
-            ...dateColumns
+            ...dataColumns
           ];
-
+    
+          // 生成行数据
           soilData.value = soilParameters.map(param => {
             const row = { parameter: param.name };
-            data.forEach(item => {
-              row[item.sampleDate] = item[param.key] || '';
+            sortedData.forEach(item => {
+              row[item.id] = item[param.key] || '—';
             });
             return row;
           });
-        } else {
-          console.warn('No soil data available.');
+    
+          // 添加编辑和删除行
+          soilData.value.push({ parameter: 'edit' });
+          soilData.value.push({ parameter: 'delete' });
         }
       } catch (error) {
         console.error('Failed to fetch soil data:', error);
         $q.notify({
           type: 'negative',
           message: 'Failed to load soil data. Please try again later.',
-          icon: 'error'
+          icon: 'error',
         });
-
-        // 请求失败时使用假数据
-        const dateColumns = [...new Set(fakeSoilData.map(item => item.sampleDate))].map(date => ({
-          name: date,
-          label: date,
+    
+        // 使用假数据
+        const sortedData = [...fakeSoilData].sort((a, b) => 
+          new Date(a.sampleDate) - new Date(b.sampleDate)
+        );
+    
+        // 使用ID生成列
+        const dataColumns = sortedData.map(item => ({
+          name: item.id,
+          label: item.sampleDate,
           align: 'center',
-          field: date,
+          field: item.id,
           sortable: true
         }));
-
+    
+        // 设置列
         soilColumns.value = [
           { name: 'parameter', label: 'Параметр', align: 'left', field: 'parameter', sortable: false },
-          ...dateColumns
+          ...dataColumns
         ];
-
+    
+        // 生成行数据
         soilData.value = soilParameters.map(param => {
           const row = { parameter: param.name };
-          fakeSoilData.forEach(item => {
-            row[item.sampleDate] = item[param.key] || '';
+          sortedData.forEach(item => {
+            row[item.id] = item[param.key] || '—';
           });
           return row;
         });
+    
+        // 添加编辑和删除行
+        soilData.value.push({ parameter: 'edit' });
+        soilData.value.push({ parameter: 'delete' });
       }
     };
 
-    const confirmDelete = (cropRotationId) => {
-      selectedCropRotationId.value = cropRotationId;
+    const getSoilInfoById = (id) => {
+      const soilInfo = fakeSoilData.find(item => item.id === id);
+      if (!soilInfo) {
+        console.error(`No soil data found for id: ${id}`);
+        return null;
+      }
+      return {
+        id: soilInfo.id,
+        ph: soilInfo.ph,
+        sampleDate: soilInfo.sampleDate,
+        organicMatter: soilInfo.organicMatter,
+        mobileP: soilInfo.mobileP,
+        mobileK: soilInfo.mobileK,
+        mobileS: soilInfo.mobileS,
+        nitrateN: soilInfo.nitrateN,
+        ammoniumN: soilInfo.ammoniumN,
+        hydrolyticAcidity: soilInfo.hydrolyticAcidity,
+        caExchange: soilInfo.caExchange,
+        mgExchange: soilInfo.mgExchange,
+        b: soilInfo.b,
+        co: soilInfo.co,
+        mn: soilInfo.mn,
+        zn: soilInfo.zn
+      };
+    };
+
+    const confirmDelete = (itemId, itemType = 'cropRotation') => {
+      // 根据类型设置对应的选中 ID 和类型
+      deleteType.value = itemType; // 保存当前删除类型
+      if (itemType === 'cropRotation') {
+        selectedCropRotationId.value = itemId;
+      } else if (itemType === 'soilComposition') {
+        selectedSoilInfoId.value = itemId;
+      }
+
+      // 打开确认删除对话框
       isDeleteDialogOpen.value = true;
     };
 
-    const deleteCropRotation = async () => {
+    const deleteItem = async () => {
       try {
-        const cropRotationId = selectedCropRotationId.value;
-        const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/fields-service/crop-rotation`, {
-          params: { cropRotationId },
-          headers: {
-            Authorization: `Bearer ${accessToken.value}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        if (deleteType.value === 'cropRotation') {
+          // 删除轮作信息
+          const cropRotationId = selectedCropRotationId.value;
+          const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/fields-service/crop-rotation`, {
+            params: { cropRotationId },
+            headers: {
+              Authorization: `Bearer ${accessToken.value}`,
+              'Content-Type': 'application/json',
+            },
+          });
 
-        if (response.status === 200) {
-          $q.notify({
-            type: 'positive',
-            message: 'Crop rotation deleted successfully!',
-            icon: 'check_circle'
+          if (response.status === 200) {
+            $q.notify({
+              type: 'positive',
+              message: 'Crop rotation deleted successfully!',
+              icon: 'check_circle',
+            });
+            await fetchRotationData(); // 重新加载轮作数据
+          } else {
+            throw new Error('Failed to delete crop rotation.');
+          }
+        } else if (deleteType.value === 'soilComposition') {
+          // 删除土壤信息
+          const soilCompositionId = selectedSoilInfoId.value;
+          const response = await axios.delete(`${process.env.VUE_APP_BASE_URL}/api/fields-service/soil-composition`, {
+            params: { soilCompositionId },
+            headers: {
+              Authorization: `Bearer ${accessToken.value}`,
+              'Content-Type': 'application/json',
+            },
           });
-          await fetchRotationData();
-        } else {
-          $q.notify({
-            type: 'negative',
-            message: 'Failed to delete crop rotation.',
-            icon: 'error'
-          });
+
+          if (response.status === 200) {
+            $q.notify({
+              type: 'positive',
+              message: 'Информация о почве успешно удалена!',
+              icon: 'check_circle',
+            });
+            await fetchSoilData(); // 重新加载土壤数据
+          } else {
+            throw new Error('Failed to delete soil composition.');
+          }
         }
       } catch (error) {
-        console.error('Failed to delete crop rotation:', error);
+        console.error('Delete operation failed:', error);
         $q.notify({
           type: 'negative',
-          message: 'Failed to delete crop rotation. Please try again later.',
-          icon: 'error'
+          message: 'Ошибка при удалении данных. Попробуйте позже.',
+          icon: 'error',
         });
       } finally {
         isDeleteDialogOpen.value = false;
         selectedCropRotationId.value = null;
+        selectedSoilInfoId.value = null;
+        deleteType.value = null; // 重置删除类型
       }
+    };
+
+    const editSoilInfo = (soilInfo) => {
+      if (!soilInfo) {
+        console.error("Invalid soil information object");
+        return;
+      }
+
+      // 跳转到编辑页面，并传递所需的查询参数
+      router.push({
+        name: 'add_soil', // 假设编辑土地信息的路由名称是 "add_soil"
+        query: {
+          contourId: contourInfo.value.contourId, // 当前轮廓 ID
+          seasonName: contourInfo.value.seasonName, // 当前季节名称
+          fieldName: contourInfo.value.fieldName, // 当前字段名称
+          contourName: contourInfo.value.contourName, // 当前轮廓名称
+          soilInfoId: soilInfo.id, // 土壤信息的唯一 ID
+          ph: soilInfo.ph,
+          sampleDate: soilInfo.sampleDate,
+          organicMatter: soilInfo.organicMatter,
+          mobileP: soilInfo.mobileP,
+          mobileK: soilInfo.mobileK,
+          mobileS: soilInfo.mobileS,
+          nitrateN: soilInfo.nitrateN,
+          ammoniumN: soilInfo.ammoniumN,
+          hydrolyticAcidity: soilInfo.hydrolyticAcidity,
+          caExchange: soilInfo.caExchange,
+          mgExchange: soilInfo.mgExchange,
+          b: soilInfo.b,
+          co: soilInfo.co,
+          mn: soilInfo.mn,
+          zn: soilInfo.zn,
+        },
+      });
     };
 
     const editCropRotation = (cropRotation) => {
@@ -525,6 +684,19 @@ export default {
       });
     };
 
+    const goToAddSoilPage = () => {
+      router.push({
+        name: 'add_soil', 
+        query: {
+          contourId: contourInfo.value.contourId, 
+          seasonName: contourInfo.value.seasonName, 
+          fieldName: contourInfo.value.fieldName, 
+          contourName: contourInfo.value.contourName
+        }
+      });
+    };
+
+
     return {
       contourInfo,
       rotationExpanded,
@@ -532,15 +704,19 @@ export default {
       columns,
       isDeleteDialogOpen,
       selectedCropRotationId,
+      selectedSoilInfoId,
       soilData,
       soilColumns,
       soilExpanded,
       fetchRotationData,
       fetchSoilData,
       confirmDelete,
-      deleteCropRotation,
       editCropRotation,
-      goToAddRotationPage
+      goToAddRotationPage,
+      goToAddSoilPage,
+      editSoilInfo,
+      deleteItem,
+      getSoilInfoById
     };
   }
 };

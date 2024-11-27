@@ -44,44 +44,55 @@
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import { useQuasar } from "quasar";
 import { userStore } from "src/usage";
 
 export default {
-  name: "SoilAddPage",
+  name: "add_soil",
   setup() {
     const $q = useQuasar();
     const route = useRoute();
     const router = useRouter();
-    const accessToken = computed(() => userStore.state.access_token);
+    const accessToken = ref(userStore.state.access_token);
 
     const season = ref(route.query.seasonName || "");
     const field = ref(route.query.fieldName || "");
     const contour = ref(route.query.contourName || "");
     const contourId = ref(route.query.contourId);
 
-    const isEditMode = ref(!!route.query.id);
-    const soilId = ref(route.query.id || "");
+    const isEditMode = ref(!!route.query.soilInfoId);
+    const soilId = ref(route.query.soilInfoId || "");
 
     const formData = ref({
-      sampleDate: route.query.sampleDate || "",
-      ph: route.query.ph || "",
-      organicMatter: route.query.organicMatter || "",
-      mobileP: route.query.mobileP || "",
-      mobileK: route.query.mobileK || "",
-      mobileS: route.query.mobileS || "",
-      nitrateN: route.query.nitrateN || "",
-      ammoniumN: route.query.ammoniumN || "",
-      hydrolyticAcidity: route.query.hydrolyticAcidity || "",
-      caExchange: route.query.caExchange || "",
-      mgExchange: route.query.mgExchange || "",
-      b: route.query.b || "",
-      co: route.query.co || "",
-      mn: route.query.mn || "",
-      zn: route.query.zn || "",
+      sampleDate: "",
+      ph: "",
+      organicMatter: "",
+      mobileP: "",
+      mobileK: "",
+      mobileS: "",
+      nitrateN: "",
+      ammoniumN: "",
+      hydrolyticAcidity: "",
+      caExchange: "",
+      mgExchange: "",
+      b: "",
+      co: "",
+      mn: "",
+      zn: "",
+    });
+
+    // 初始化数据（编辑模式下填充表单数据）
+    onMounted(() => {
+      if (isEditMode.value) {
+        Object.keys(formData.value).forEach((key) => {
+          if (route.query[key]) {
+            formData.value[key] = route.query[key];
+          }
+        });
+      }
     });
 
     const saveSoilInfo = async () => {
@@ -91,7 +102,7 @@ export default {
       try {
         if (isEditMode.value) {
           await axios.put(`${apiUrl}/soil-compositions`, payload, {
-            params: { id: soilId.value },
+            params: { soilCompositionId: soilId.value },
             headers: {
               Authorization: `Bearer ${accessToken.value}`,
               "Content-Type": "application/json",
