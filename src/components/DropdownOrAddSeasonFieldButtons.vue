@@ -38,10 +38,9 @@
     </div>
     <!-- выбираем поле, появляется после того как выбрали сезон и если полей нет, то отображается кнопка добавления поля -->
     <div v-if="fieldList.length !== 0" class="dropdown-button q-pa-md ">
-      <q-btn-dropdown  v-if="fieldList.length !== 0" color="primary" label="Выбор поля" persistent>
+      <q-btn-dropdown v-if="fieldList.length !== 0" color="primary" label="Выбор поля" persistent>
         <q-list>
-          <q-item v-for="field in filteredFields" :key="field.id" clickable
-            @click="chooseActiveField(field)" dense
+          <q-item v-for="field in filteredFields" :key="field.id" clickable @click="chooseActiveField(field)" dense
             :class="{ 'active-item': activeField && activeField.id === field.id }">
             <q-item-section>
               <q-item-label>{{field.name}}</q-item-label>
@@ -56,26 +55,29 @@
       </q-btn-dropdown>
     </div>
   </div>
-  <map-page-edit-buttons v-if="activeField && activeSeason"></map-page-edit-buttons>
+  <map-page-edit-buttons v-if="activeField && activeSeason" @startDrawing="startDrawing"
+    @removeSelectedPolygon="removeSelectedPolygon" @undoLastAction="undoLastAction"></map-page-edit-buttons>
 </template>
 <script>
-  import MapPageEditButtons from 'src/components/MapPageEditButtons.vue';
   import { useRouter, useRoute } from 'vue-router';
   import { userStore } from "src/usage";
 
   import axios from 'axios';
   import { ref, onMounted, computed } from "vue";
   import { useQuasar } from 'quasar';
+  import MapPageEditButtons from './MapPageEditButtons.vue';
   export default {
     name: 'DropdownOrAddSeasonFieldButtons',
     components:{
       MapPageEditButtons
     },
-    setup() {
+    setup(props, { emit }) {
       const router = useRouter();
       const route = useRoute();
       const $q = useQuasar();
       const accessToken = userStore.state.access_token;
+      // Получаем доступ к методам карты
+      const mapRef = ref(null);
       const activeSeason = ref(null);
 
       const activeField = ref(null);
@@ -86,6 +88,15 @@
       const fieldList = computed(() => {
         return fieldListAdded.value.concat(fieldListSaved.value);
       }); // массив полей
+      const startDrawing = (isDrawing) => {
+        emit('startDrawing', isDrawing);
+}
+      const removeSelectedPolygon = () => {
+        emit('removeSelectedPolygon');
+      }
+      const undoLastAction = () => {
+        emit('undoLastAction');
+      }
       const goToSeasonPage = () => {
         console.log("Go to season page");
         router.push("/add_season");
@@ -196,6 +207,9 @@
         chooseActiveField,
         filteredSeasons,
         filteredFields,
+        startDrawing,
+        removeSelectedPolygon,
+        undoLastAction
       }
     }
   }

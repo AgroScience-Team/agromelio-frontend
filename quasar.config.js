@@ -1,4 +1,5 @@
 const { configure } = require('quasar/wrappers');
+// const { default: leaflet } = require('src/boot/leaflet');
 const { mergeConfig } = require('vite')
 require('dotenv').config();
 
@@ -17,7 +18,8 @@ module.exports = configure(function (/* ctx */) {
     ],
 
     css: [
-      'app.scss'
+      // 'app.scss'
+
     ],
 
 
@@ -49,6 +51,7 @@ module.exports = configure(function (/* ctx */) {
         //     chunkSizeWarningLimit: 750
         //   }
         // })
+        // +
       },
 
 

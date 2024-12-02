@@ -1,12 +1,12 @@
 <template>
   <!-- 3 кнопки будут видны если нажань на редактировать -->
   <div class="edit-mode q-pa-md">
-        <q-btn v-if="editModeOn" fab color="primary" icon="add" class="button" @click="confirm = true">
+        <q-btn v-if="editModeOn" fab color="primary" icon="add" class="button" @click="startDrawing()">
       <div class="button-overlay">
         <p>Добавить контур</p>
       </div>
     </q-btn>
-    <q-btn v-if="editModeOn" fab color="primary" icon="undo" class="button">
+    <q-btn v-if="editModeOn" fab color="primary" icon="undo" class="button" @click="undoLastAction">
       <div class="button-overlay">
         <p>Шаг назад</p>
       </div>
@@ -30,8 +30,8 @@
           <span align="center"><strong>Вы действительно хотите удалить этот объект?</strong></span>
         </q-card-section>
         <q-card-actions align="center">
-          <q-btn label="Нет" color="primary" v-close-popup />
-          <q-btn label="Да" color="primary" v-close-popup />
+          <q-btn label="Нет" color="primary"  v-close-popup />
+          <q-btn label="Да" color="primary" @click="removeSelectedPolygon"/>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -44,18 +44,32 @@
 </template>
 
 <script>
-  import { useQuasar } from 'quasar';
+import { useQuasar } from 'quasar';
   import { ref, onMounted } from "vue";
 
   export default {
       name: 'MapPageEditButtons',
-setup() {
+    setup(props, { emit }) {
       const $q = useQuasar();
       const confirm = ref(false);
       const editModeOn = ref(false);
+      const isDrawing = ref(false);
+      const startDrawing = () => {
+        isDrawing.value = !isDrawing.value;
+        emit('startDrawing', isDrawing.value);
+      }
+      const removeSelectedPolygon = () => {
+        confirm.value = false;
+        emit('removeSelectedPolygon');
+      }
+      const undoLastAction = () => {
+        emit('undoLastAction');
+      }
 
-
-      return {
+  return {
+    startDrawing,
+    undoLastAction,
+    removeSelectedPolygon,
         confirm,
         editModeOn
       };
