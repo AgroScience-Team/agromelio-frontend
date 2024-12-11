@@ -30,7 +30,7 @@
         seasonStart: '',
         seasonEnd: '',
       });
-      const seasonStore = useSeasonStore();
+      // const seasonStore = useSeasonStore();
       const $q = useQuasar();
 
       const goToMapPage = () => {
@@ -70,7 +70,8 @@
         console.log('success');
         console.log('Submitting data:', JSON.stringify(formData.value));
         // axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {
-        axios.post("https://295aeaa1-a948-4811-9198-0b73bcc777b9.mock.pstmn.io/api/v2/fields-service/season", formData.value, {
+        // axios.post("https://295aeaa1-a948-4811-9198-0b73bcc777b9.mock.pstmn.io/api/v2/fields-service/season", formData.value, {
+          axios.post(`${process.env.VUE_APP_BASE_URL}/api/fields-service/season`, formData.value, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'

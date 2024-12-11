@@ -66,7 +66,7 @@ export function postlog({ username, password }) {
             "username": username,
             "password": password,
         }
-
+      console.log('Request URL:', `${process.env.VUE_APP_BASE_URL}/api/auth/token`);
         axios
             .post(`${process.env.VUE_APP_BASE_URL}/api/auth/token`, myrequest, {
                 headers: {
@@ -115,7 +115,7 @@ export function postlog({ username, password }) {
 export function postToServer({ url, data, request, getParams }) {
     console.log("POST TO SERVER: ", data); // что передаем
 
-    return new Promise((resolve, reject) => { //ассинхронное 
+    return new Promise((resolve, reject) => { //ассинхронное
         const { access_token } = userStore.getState();
         let axiosFunc;
 

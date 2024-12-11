@@ -123,8 +123,10 @@
       });
       const fetchSeasons = async () => {
         try {
+          console.log("base url: ", process.env.VUE_APP_BASE_URL);
           const response = await axios.get(
-            "https://295aeaa1-a948-4811-9198-0b73bcc777b9.mock.pstmn.io/api/v2/fields-service/seasons",
+            // "https://295aeaa1-a948-4811-9198-0b73bcc777b9.mock.pstmn.io/api/v2/fields-service/seasons",
+            `${process.env.VUE_APP_BASE_URL}/api/v2/fields-service/seasons`,
             {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -142,7 +144,8 @@
       }
       const fetchFields = async (id) => {
         try {
-          const response = await axios.get("http://localhost:9000/api/v2/fields-service/seasons/${id}/fields", {
+          // const response = await axios.get("http://localhost:9000/api/v2/fields-service/seasons/${id}/fields", {
+            const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/v2/fields-service/seasons/${id}/fields`, {
           headers: {
               Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",

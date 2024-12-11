@@ -48,9 +48,8 @@ export default {
     const $q = useQuasar();
     const accessToken = userStore.state.access_token;
     const isDrawingEnabled = ref(false);
-    let actionStack = [];  // Стек для хранения истории действий
-    let polygonPoints = []; // массив для хранения точек
-
+    let historyStack = [];  // Стек для хранения истории всех действий
+    let polygon =  []; // массив для хранения точек полигона текущего
     const selectedSeason = ref(
       JSON.parse(sessionStorage.getItem('activeSeason')) || null
     );
@@ -149,7 +148,7 @@ export default {
       router.push("/add_field");
     };
 
-    // 取消颜色选择 Отмена выбора цвета
+    // Отмена выбора цвета
     const cancelColorSelection = () => {
       if (currentLayer) {
         drawnItems.removeLayer(currentLayer);
@@ -157,7 +156,7 @@ export default {
       }
       colorDialog.value = false;
     };
-//     // 应用颜色选择 Применить выбор цвета
+//     // Применить выбор цвета
 //     Диалог выбора цвета: Пользователь может выбрать цвет, который применяется к текущему полигону.
 // Установка стиля: Метод setStyle() обновляет цвет и прозрачность.
     const applyColorSelection = () => {
@@ -239,38 +238,27 @@ export default {
     let drawControl = null;
     let drawnHandler = null;  // Объявляем переменную для обработчика
     let selectedPolygon = null;  // Переменная для хранения выделенного полигона
-
-    const addPolygonToStack = (layer) => {
-      drawnItems.addLayer(layer);
-      actionStack.push({
-        action: 'add',
-        layer: layer
-      });
-    }
-    const deletePolygonToStack = (layer) => {
-      drawnItems.removeLayer(layer);
-      actionStack.push({
-        action: 'delete',
-        layer: layer
-      });
-    }
-    let polygon = null;       // Переменная для хранения полигона
-
+    let tempLayer = null;
     const startDrawing = (isDrawing) => {
       isDrawingEnabled.value = isDrawing;
       console.log("isDrawing ",isDrawing);
-
       if (isDrawingEnabled.value) {
         if (!drawControl) {
 
           drawControl = new L.Draw.Polygon(map.value, {
             shapeOptions: { color: 'blue' }
+              // shapeOptions: { color: 'transparent' },  // Устанавливаем цвет линий полигона как прозрачный
+
           });
           console.log("enabling drawControl");
         }
         drawControl.enable();  // Активирует режим рисования      }
+        console.log('enable');
+
         if (!drawnHandler) {
           drawnHandler = (event) => {
+            console.log("start of drawhandle");
+            polygon = [];
             const layer = event.layer;
             // Добавляем обработчик клика на полигон
             // Обработчик клика на полигон для выделения
@@ -338,23 +326,42 @@ export default {
 
             colorDialog.value = true;
           }
+          // Старт рисования полигона
+
+          // Начало рисования полигона
+          map.value.on('draw:drawstart', (e) => {
+            console.log('draw:drawstart');
+            if (e.layerType === 'polygon') {
+              currentLayer = e.layer;  // Сохраняем текущий слой
+              polygon = [];       // Очищаем массив точек
+            }
+          });
+
+          // Добавление новой точки при рисовании
+          map.value.on('draw:drawvertex', (e) => {
+            console.log('draw:drawvertex');
+            currentLayer = e.layer;  // Обновляем текущий полигон на этапе рисования
+            console.log(e.layer);
+            const latlng = e.latlng;       // Координаты новой точки
+            polygon.push(latlng);     // Добавляем в массив
+          });
+
           map.value?.on("draw:created", drawnHandler);
           // Слушаем клик на карте для добавления точек
-          // map.value?.on('click', function (e) {
-          //   // Добавляем точку в массив точек
-          //   polygonPoints.push(e.latlng);
+          map.value?.on('click', function (e) {
+            // historyStack.push([...polygon])
+            // Добавляем точку в массив точек
+            console.log("click");
+            polygon.push([e.latlng.lat, e.latlng.lng]);
+            console.log("length = ", polygon.length);
+            // Полигон будет перерисовываться только после удаления или отмены
+            // historyStack.push({ 'action': 'add_point', 'point': [e.latlng.lat, e.latlng.lng] });
+            // if (tempLayer) {
+            //   map.value.removeLayer(tempLayer);  // Удаляем старый временный слой
+            // }
+            // tempLayer = L.polygon(polygon, { color: 'blue' }).addTo(map.value);  // Создаем новый временный слой
 
-          //   // Добавляем точку на карту (можно для визуализации)
-          //   // L.marker(e.latlng).addTo(map.value);
-
-          //   // Если полигон уже существует, обновляем его точки
-          //   if (polygon) {
-          //     polygon.setLatLngs(polygonPoints);
-          //   } else {
-          //     // Если полигона нет, создаем его
-          //     polygon = L.polygon(polygonPoints).addTo(map.value);
-          //   }
-          // });
+          });
         }
       }
       else {
@@ -372,13 +379,14 @@ export default {
 
     const removeSelectedPolygon = () => {
       if (selectedPolygon) {
+        historyStack.push({ action: 'delete_polygon', layer: selectedPolygon });
+
         drawnItems.removeLayer(selectedPolygon);  // Удаляем слой из группы
         map.value.removeLayer(selectedPolygon);   // Удаляем с карты
-        drawnItems.removeLayer(selectedPolygon);
-        actionStack.push({
-          action: 'delete',
-          layer: selectedPolygon
-        });
+        // historyStack.push({
+        //   action: 'delete',
+        //   layer: selectedPolygon
+        // });
         selectedPolygon = null;  // Сбрасываем выбранный полигон
         console.log("Selected polygon removed");
       } else {
@@ -390,29 +398,133 @@ export default {
         console.log("No polygon selected to remove");
       }
     };
+    // Функция для обновления полигона
+    const updatePolygon = () => {
+      console.log(currentLayer);
+      if (currentLayer) {
+        console.log("current layer exist");
+        // Если полигон уже существует, обновляем его с новыми точками
+        currentLayer.setLatLngs(polygon);
+        // map.value.invalidateSize()
 
+      }
+      else {
+        // Если полигон еще не завершен, перерисовываем черновой полигон
+        const layers = drawnItems.getLayers();
+        if (polygon.length > 0) {
+          drawnItems.removeLayer(layers[layers.length - 1]);  // Удаляем последний слой
+        }
+        // if (polygon.length > 1) {
+        //   if (tempLayer) {
+        //     console.log('dell');
+        //     map.value.removeLayer(tempLayer);  // Удаляем старый временный слой
+        //   }
+        //   tempLayer = L.polygon(polygonPoints, { color: 'blue' }).addTo(map.value);
+        // }
+      }
+    };
     const undoLastAction = () => {
-      const lastAction = actionStack.pop();  // Получаем последнее действие из стека
+      console.log("undo last action");
+      console.log(historyStack);
+      if (drawControl && drawControl._markers && drawControl._markers.length > 0) {
+        // Удаляем последнюю маркерную точку из массива
+        console.log(drawControl);
+        const lastMarker = drawControl._markers.pop();
+        console.log(drawControl);
+        drawControl._markerGroup.removeLayer(lastMarker);
 
-      if (!lastAction) {
-        $q.notify({
-          type: 'negative',
-          message: 'Нет действий для отмены',
-        });
-        return;
-      }
+        // Обновляем полигон на карте, удаляя последнюю точку
+        const latlngs = drawControl._markers.map(marker => marker.getLatLng());
 
-      if (lastAction.action === 'add') {
-        // Если последнее действие - добавление точки, удалим ее и перерисуем полигон
-        drawnItems.removeLayer(lastAction.layer);
-        map.value.removeLayer(lastAction.layer);
-        console.log('Polygon removed');
-      } else if (lastAction.action === 'delete') {
-        // Если последнее действие - удаление полигона, восстановим его
-        drawnItems.addLayer(lastAction.layer);
-        map.value.addLayer(lastAction.layer);
-        console.log('Polygon restored');
+        // Обновляем полигон, только если есть больше двух точек (полигоны требуют 3)
+        if (latlngs.length >= 3) {
+          const latlngs = drawControl._markers.map(marker => marker.getLatLng());
+
+          drawControl._poly.setLatLngs(latlngs);  // Применяем изменения к полигону
+        } else {
+          drawControl._poly.setLatLngs([]);  // Очистка, если точек недостаточно
+        }
       }
+      // if (polygon.length > 0) { // если есть текущий полигон который рисуем, то удаляем последнюю точку
+      //   console.log("delete point");
+      //   // polygon.pop();  // Удаляем последнюю точку
+      //   // console.log(polygon);
+      //   // // updatePolygon();        // Перерисовываем полигон
+      //   // if (tempLayer) {
+      //   //   map.value.removeLayer(tempLayer);  // Удаляем текущий временный полигон
+      //   // }
+
+      //   // if (polygon.length > 1) {
+      //   //   tempLayer = L.polygon(polygon, { color: 'blue' }).addTo(map.value);  // Перерисовываем полигон без последней точки
+      //   // }
+      //   console.log("drawcontor");
+      //   console.log(drawControl);
+      //   // if (drawControl._drawing) {
+      //   //   console.log("hereee");
+      //   //   const lastVertex = drawControl._poly.getLatLngs().length - 1;
+      //   //   if (lastVertex >= 0) {
+      //   //     // Удаляем последнюю точку
+      //   //     drawControl._poly.getLatLngs().pop();
+      //   //     drawControl._poly.redraw();  // Перерисовываем полигон
+      //   //   }
+      //   // }
+      //   // polygon.pop();
+      //   // currentLayer.setLatLngs([polygon]);
+      //   if (currentLayer) {
+      //     console.log("start to update polygon");
+      //     const latlngs = currentLayer.getLatLngs()[0];  // Получаем массив координат
+      //       latlngs.pop();  // Удаляем последнюю точку
+      //       currentLayer.setLatLngs([latlngs]);  // Обновляем полигон
+      //   }
+      // }
+
+      else if (historyStack.length > 0) {
+
+        const lastAction = historyStack.pop();  // Извлекаем последнее действие
+
+        switch (lastAction.action) {
+          // case 'save_field':
+          //   console.log("delete point");
+          //   polygon.pop();  // Удаляем последнюю точку
+          //   console.log(polygon);
+          //   updatePolygon();        // Перерисовываем полигон
+          //   break;
+
+          case 'delete_polygon':
+            console.log("restore polygon");
+            drawnItems.addLayer(lastAction.layer);  // Восстанавливаем удаленный полигон
+            break;
+
+          default:
+            console.log("Неизвестное действие для отмены");
+        }
+      }
+      else {
+        console.log("нет действий для отмены");
+      }
+      // if (actionStack.length > 0) {
+      //   const lastAction = actionStack.pop();  // Получаем последнее действие из стека
+
+      //   if (!lastAction) {
+      //     $q.notify({
+      //       type: 'negative',
+      //       message: 'Нет действий для отмены',
+      //     });
+      //     return;
+      //   }
+
+      //   if (lastAction.action === 'add') {
+      //     // Если последнее действие - добавление точки, удалим ее и перерисуем полигон
+      //     drawnItems.removeLayer(lastAction.layer);
+      //     map.value.removeLayer(lastAction.layer);
+      //     console.log('Polygon removed');
+      //   } else if (lastAction.action === 'delete') {
+      //     // Если последнее действие - удаление полигона, восстановим его
+      //     drawnItems.addLayer(lastAction.layer);
+      //     map.value.addLayer(lastAction.layer);
+      //     console.log('Polygon restored');
+      //   }
+      // }
     }
     onMounted(() => {
       selectedSeason.value = JSON.parse(sessionStorage.getItem('activeSeason')) || null;
@@ -445,11 +557,6 @@ export default {
       removeSelectedPolygon,
       undoLastAction
     };
-
-    // Переход к странице добавления поля
-    // const goToAddPage = () => {
-    //   router.push("/add_field");
-    // };
 
   },
 };
