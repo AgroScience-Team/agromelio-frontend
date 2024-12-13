@@ -36,6 +36,7 @@
       @startDrawing="startDrawing"
       @removeSelectedPolygon="removeSelectedPolygon"
       @undoLastAction="undoLastAction"
+      @postContours="postContours"
     ></dropdown-or-add-season-field-buttons>
   </div>
 </template>
@@ -68,7 +69,7 @@ export default {
     let deleteStack = []; // Стек для хранения истории всех действий
     let polygon = []; // массив для хранения точек полигона текущего
     let isBorderVisible = true; // Флаг для отслеживания состояния рамки
-    const contourName = ref('');
+    const contourName = ref("");
     const selectedSeason = ref(
       JSON.parse(sessionStorage.getItem("activeSeason")) || null
     );
@@ -202,45 +203,6 @@ export default {
       console.log("Selected color:", selectedColor.value);
     };
 
-    // 初始化地图和绘制功能 Инициализация функций карты и черчения
-    const initDrawing = () => {
-
-      map.value.on("draw:edited", (event) => {
-        const layers = event.layers;
-
-        layers.eachLayer((layer) => {
-          const newLatLngs = layer.getLatLngs()[0];
-
-          const coordinates = newLatLngs.map((latLng) => [
-            latLng.lng,
-            latLng.lat,
-          ]);
-
-          // 更新 GeoJSON 数据 Обновление данных GeoJSON
-          const updatedPolygon = layer.toGeoJSON();
-          updatedPolygon.geometry.coordinates = [coordinates];
-
-          console.log("Обновленные координаты:", coordinates);
-
-          // 保存颜色信息 Сохранение информации о цвете
-          const currentStyle = layer.options;
-
-          // 从 drawnItems 中移除旧图层 Удаление старых слоев из нарисованных элементов
-          drawnItems.removeLayer(layer);
-
-          // 创建新图层并应用样式 Создание нового слоя и применение стилей
-          const newLayer = L.polygon(newLatLngs, currentStyle);
-          drawnItems.addLayer(newLayer);
-        });
-      });
-
-      // draw: toolbarclosed — это событие, которое срабатывает, когда пользователь закрывает панель инструментов рисования в Leaflet Draw.
-      map.value.on("draw:toolbarclosed", () => {
-        drawControl._toolbars.draw.disable();
-        map.value.off("mousemove"); // 停止鼠标移动事件监听 Прекратите прослушивать события движения мыши
-      });
-    };
-
     //при нажатии на кнопку добавления контура в DropdownOrAddSeasonFieldButtons, рисовать полигон
     let drawControl = null;
     let drawnHandler = null; // Объявляем переменную для обработчика
@@ -271,21 +233,19 @@ export default {
             layer.on("click", () => {
               // Устанавливаем стиль для нового выбранного полигона
               selectedPolygon = layer;
-              /*selectedPolygon.setStyle({
-                weight: 8,
-                fillOpacity: 0.2,
-                color: "black",
-              }); */// Меняем цвет для выделения
               isBorderVisible = !isBorderVisible;
               if (isBorderVisible) {
                 // Убираем рамку
                 selectedPolygon.setStyle({ weight: 0 });
               } else {
                 // Добавляем рамку
-                selectedPolygon.setStyle({ weight: 4, color: 'black', opacity: 1 }); // Толщина и цвет рамки
-            }
-          }
-          );
+                selectedPolygon.setStyle({
+                  weight: 4,
+                  color: "black",
+                  opacity: 1,
+                }); // Толщина и цвет рамки
+              }
+            });
             if (
               !layer ||
               !layer.getLatLngs ||
@@ -409,18 +369,82 @@ export default {
         );
         // Обновляем отрисовку полигона
         drawControl._poly.setLatLngs(latlngs);
-      }
-      else if (deleteStack.length > 0) {
+      } else if (deleteStack.length > 0) {
         // Восстанавливаем полигон из стека
         const lastPolygon = deleteStack.pop();
         console.log("restore polygon");
         drawnItems.addLayer(lastPolygon); // Добавляем слой обратно в коллекцию слоёв
         map.value.addLayer(lastPolygon); // Добавляем полигон на картy
-
       } else {
         console.log("нет действий для отмены");
       }
+    };
+    const postContours = async () => {
+      if (!accessToken) {
+        console.error("No access token available");
+        $q.notify({
+          type: "negative",
+          message: "Залогиньтесь, пожалуйста",
+        });
+        return;
+      }
 
+      // преобразовываем координаты и имена контуров в массив
+      const contours = [];
+      drawnItems.eachLayer((layer) => {
+        if (layer instanceof L.Polygon) {
+          const geoJson = layer.toGeoJSON();
+          // Извлекаем координаты из GeoJSON
+          let coordinates = geoJson.geometry.coordinates[0].map((coord) => ({
+            longitude: coord[0], // lng
+            latitude: coord[1],  // lat
+          }));
+          contours.push({
+            contour: "ContourBaseDTO",
+            name: layer.feature.properties.name,
+            color: layer.options.fillColor.replace("#", ""),
+            squareArea: turf.area(geoJson).toFixed(2), // Площадь в квадратных метрах, округлена до двух знаков
+            coordinates: coordinates,
+          });
+        }
+      });
+      console.log("contours ", contours);
+      const fieldToPost = {
+        name: JSON.parse(sessionStorage.getItem("activeField"))["name"],
+        description: JSON.parse(sessionStorage.getItem("activeField"))[
+          "description"
+        ],
+        field: "FieldDTO",
+        contours: contours,
+      };
+      console.log("field: ", fieldToPost);
+
+      try {
+        const response = await axios.post(
+          `${process.env.VUE_APP_BASE_URL}/api/fields-service/seasons/${
+            JSON.parse(sessionStorage.getItem("activeSeason"))["id"]
+          }/field`,
+          fieldToPost,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log("Контура успешно отправлены:", response.data);
+
+        $q.notify({
+          type: "positive",
+          message: "Контура успешно отправлены!",
+        });
+      } catch (error) {
+        console.error("Ошибка при отправке контуров:", error);
+        $q.notify({
+          type: "negative",
+          message: "Ошибка при отправке данных!",
+        });
+      }
     };
     onMounted(() => {
       selectedSeason.value =
@@ -453,6 +477,7 @@ export default {
       startDrawing,
       removeSelectedPolygon,
       undoLastAction,
+      postContours,
     };
   },
 };

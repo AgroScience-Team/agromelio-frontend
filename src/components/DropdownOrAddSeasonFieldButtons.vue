@@ -106,6 +106,7 @@
     @startDrawing="startDrawing"
     @removeSelectedPolygon="removeSelectedPolygon"
     @undoLastAction="undoLastAction"
+    @postContours="postContours"
   ></map-page-edit-buttons>
 </template>
 <script>
@@ -146,6 +147,9 @@ export default {
     };
     const undoLastAction = () => {
       emit("undoLastAction");
+    };
+    const postContours = () => {
+      emit("postContours");
     };
     const goToSeasonPage = () => {
       console.log("Go to season page");
@@ -268,6 +272,7 @@ export default {
       startDrawing,
       removeSelectedPolygon,
       undoLastAction,
+      postContours
     };
   },
 };

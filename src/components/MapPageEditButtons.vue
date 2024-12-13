@@ -6,12 +6,12 @@
         <p>Добавить контур</p>
       </div>
     </q-btn>
-    <q-btn v-if="editModeOn" fab color="primary" icon="undo" class="button" @click="undoLastAction">
+    <q-btn v-if="editModeOn" fab color="primary" icon="undo" class="button" @click="undoLastAction()">
       <div class="button-overlay">
         <p>Шаг назад</p>
       </div>
     </q-btn>
-    <q-btn v-if="editModeOn" fab color="primary" icon="done" class="button" @click="goToAddPage">
+    <q-btn v-if="editModeOn" fab color="primary" icon="done" class="button" @click="postContours()">
       <div class="button-overlay">
         <p>Сохранить</p>
       </div>
@@ -65,14 +65,18 @@ import { useQuasar } from 'quasar';
       const undoLastAction = () => {
         emit('undoLastAction');
       }
+      const postContours = () =>{
+        emit('postContours');
+      }
 
   return {
     startDrawing,
     undoLastAction,
     removeSelectedPolygon,
         confirm,
-        editModeOn
-      };
+        editModeOn,
+        postContours
+  };
     }
   }
 </script>
