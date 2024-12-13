@@ -30,6 +30,45 @@
   <!-- seasons получаем в onmounted, отображать список если массив не пустой, иначе есть только кнопка добавления сезона
    если нет полей есть кнопка добавления поля -->
   <div class="season-field">
+
+    <!-- выбираем поле, появляется после того как выбрали сезон и если полей нет, то отображается кнопка добавления поля -->
+    <div v-if="fieldList.length !== 0" class="dropdown-button q-pa-md">
+      <q-btn-dropdown
+        v-if="fieldList.length !== 0"
+        color="primary"
+        label="Выбор поля"
+        persistent
+      >
+        <q-list>
+          <q-item
+            v-for="field in filteredFields"
+            :key="field.id"
+            clickable
+            @click="chooseActiveField(field)"
+            dense
+            :class="{
+              'active-item': activeField && activeField.id === field.id,
+            }"
+          >
+            <q-item-section>
+              <q-item-label>{{ field.name }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item
+          v-if="!activeField"
+          clickable
+            v-close-popup
+            @click="goToFieldPage()"
+            dense
+            class="add-season-field-item"
+          >
+            <q-item-section>
+              <q-item-label>ДОБАВИТЬ ПОЛЕ</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
+    </div>
     <div v-if="seasonsList.length !== 0" class="dropdown-button q-pa-md">
       <q-btn-dropdown color="primary" label="Выбор сезона" persistent>
         <q-list>
@@ -63,44 +102,7 @@
         </q-list>
       </q-btn-dropdown>
     </div>
-    <!-- выбираем поле, появляется после того как выбрали сезон и если полей нет, то отображается кнопка добавления поля -->
-    <div v-if="fieldList.length !== 0" class="dropdown-button q-pa-md">
-      <q-btn-dropdown
-        v-if="fieldList.length !== 0"
-        color="primary"
-        label="Выбор поля"
-        persistent
-      >
-        <q-list>
-          <q-item
-            v-for="field in filteredFields"
-            :key="field.id"
-            clickable
-            @click="chooseActiveField(field)"
-            dense
-            :class="{
-              'active-item': activeField && activeField.id === field.id,
-            }"
-          >
-            <q-item-section>
-              <q-item-label>{{ field.name }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item
-            v-if="!activeField"
-            v-close-popup
-            @click="goToFieldPage()"
-            dense
-            class="add-season-field-item"
-          >
-            <q-item-section>
-              <q-item-label>ДОБАВИТЬ ПОЛЕ</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-btn-dropdown>
-    </div>
-  </div>
+      </div>
   <map-page-edit-buttons
     v-if="activeField && activeSeason"
     @startDrawing="startDrawing"
@@ -114,7 +116,7 @@ import { useRouter, useRoute } from "vue-router";
 import { userStore } from "src/usage";
 
 import axios from "axios";
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import { useQuasar } from "quasar";
 import MapPageEditButtons from "./MapPageEditButtons.vue";
 export default {
@@ -210,6 +212,22 @@ export default {
         console.log("Didn't get fields");
       }
     };
+    const handleStorageChange = (event) => {
+      //обновляем поля которые сохранены локально и на сервере, когда отправили поле с контурами на сервер
+      if (event.key === "fields") {
+        try {
+          fieldListAdded.value = JSON.parse(event.newValue || "[]");
+          console.log("Updated local fields:", fieldListAdded.value);
+
+          const activeSeasonData = sessionStorage.getItem("activeSeason");
+          if (activeSeasonData) {
+            fetchFields(JSON.parse(activeSeasonData)["id"]);
+          }
+        } catch (error) {
+          console.error("Failed to update fields from sessionStorage:", error);
+        }
+      }
+    };
     onMounted(async () => {
       if (sessionStorage.getItem("activeField")) {
         activeField.value = JSON.parse(sessionStorage.getItem("activeField"));
@@ -221,8 +239,13 @@ export default {
           fieldListAdded.value = JSON.parse(sessionStorage.getItem("fields"));
         }
       }
+
+      window.addEventListener("storage", handleStorageChange); // позволяет обнаруживать изменения, происходящие в sessionStorage
       fetchSeasons();
       console.log("fields:", fieldList.value);
+    });
+    onBeforeUnmount(() => {
+      window.removeEventListener("storage", handleStorageChange); // позволяет обнаруживать изменения, происходящие в sessionStorage
     });
     const chooseActiveSeason = (season) => {
       if (!activeSeason.value) {
@@ -247,16 +270,24 @@ export default {
       }
     };
     const chooseActiveField = (field) => {
+      console.log("chooose");
+      console.log(activeField.value);
+console.log(fieldListAdded);
+console.log(fieldListSaved);
+console.log(filteredFields);
       if (!activeField.value) {
+
         activeField.value = field;
         sessionStorage.setItem(
           "activeField",
           JSON.stringify(activeField.value)
         );
       } else {
+        console.log("activeF = 0");
         activeField.value = null;
         sessionStorage.removeItem("activeField");
       }
+      console.log(activeField.value);
     };
     return {
       goToSeasonPage,
@@ -272,7 +303,7 @@ export default {
       startDrawing,
       removeSelectedPolygon,
       undoLastAction,
-      postContours
+      postContours,
     };
   },
 };
@@ -301,6 +332,8 @@ export default {
 .add-season-field-item {
   background-color: #222c3c;
   color: white;
+  z-index: 9999; /* Увеличить приоритет */
+  pointer-events: all; /* Включить кликабельность */
 }
 
 .add-button {
@@ -320,6 +353,7 @@ export default {
   border-radius: 4px;
   font-family: Arial, sans-serif;
   white-space: nowrap;
+
 }
 
 .add-button:hover .button-overlay {

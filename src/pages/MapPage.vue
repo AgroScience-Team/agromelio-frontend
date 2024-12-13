@@ -397,7 +397,7 @@ export default {
           // Извлекаем координаты из GeoJSON
           let coordinates = geoJson.geometry.coordinates[0].map((coord) => ({
             longitude: coord[0], // lng
-            latitude: coord[1],  // lat
+            latitude: coord[1], // lat
           }));
           contours.push({
             contour: "ContourBaseDTO",
@@ -434,6 +434,19 @@ export default {
         );
         console.log("Контура успешно отправлены:", response.data);
 
+        //в fields в sessionStorage убираем отправленное поле
+        const fields = JSON.parse(sessionStorage.getItem("fields") || "[]");
+        const activeField = JSON.parse(
+          sessionStorage.getItem("activeField") || "[]"
+        ); // Пример activeField с id
+
+        // Удаляем объект, где id совпадает с activeField.id
+        const updatedFields = fields.filter(
+          (field) => field["name"] !== activeField["name"]
+        );
+        // Сохраняем обновленный массив в sessionStorage
+        sessionStorage.setItem("fields", JSON.stringify(updatedFields));
+
         $q.notify({
           type: "positive",
           message: "Контура успешно отправлены!",
@@ -446,7 +459,7 @@ export default {
         });
       }
     };
-    onMounted(() => {
+    onMounted(async () => {
       selectedSeason.value =
         JSON.parse(sessionStorage.getItem("activeSeason")) || null;
       selectedField.value =
@@ -460,9 +473,47 @@ export default {
       }).addTo(map.value);
 
       map.value.addLayer(drawnItems);
+      if (
+        selectedSeason.value &&
+        selectedField.value &&
+        selectedField.value.id
+      ) {
+        //если есть активное поле отрисовываем контура
+        try {
+          // Запрос к API для получения контуров
+          console.log(selectedField.value["id"]);
+          const response = await axios.get(
+            `${process.env.VUE_APP_BASE_URL}/api/fields-service/fields/${selectedField.value["id"]}/contours`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          const contours = response.data;
 
+          // Рендеринг контуров на карте
+          contours.forEach((contour) => {
+            const coordinates = contour.coordinates.map((coord) => [
+              coord.latitude,
+              coord.longitude,
+            ]);
+            const polygon = L.polygon(coordinates, {
+              color: `#${contour.color}`, // Устанавливаем цвет из данных
+              fillOpacity: 0.5,
+            });
+
+            polygon.addTo(map.value);
+            drawnItems.addLayer(polygon); // Добавляем в группу нарисованных объектов
+            console.log(`Полигон добавлен на карту: ${contour.name}`);
+          });
+        } catch (error) {
+          console.error("Ошибка при получении контуров:", error);
+        }
+      }
       // 加载已有多边形 Загрузка существующих полигонов
-      fetchDataAndDrawPolygons();
+      // fetchDataAndDrawPolygons();
     });
 
     return {

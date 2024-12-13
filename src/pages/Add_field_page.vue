@@ -80,7 +80,6 @@
         goToMapPage();
       };
 
-
       return {
         formData,
         submitData,

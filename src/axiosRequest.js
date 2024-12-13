@@ -66,7 +66,6 @@ export function postlog({ username, password }) {
             "username": username,
             "password": password,
         }
-      console.log('Request URL:', `${process.env.VUE_APP_BASE_URL}/api/auth/token`);
         axios
             .post(`${process.env.VUE_APP_BASE_URL}/api/auth/token`, myrequest, {
                 headers: {
