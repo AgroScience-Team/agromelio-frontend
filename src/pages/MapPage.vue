@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, onUnmounted } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -66,6 +66,7 @@ export default {
     const $q = useQuasar();
     const accessToken = userStore.state.access_token;
     const isDrawingEnabled = ref(false);
+    const activeField = ref(sessionStorage.getItem("activeField"));
     let deleteStack = []; // Стек для хранения истории всех действий
     let polygon = []; // массив для хранения точек полигона текущего
     let isBorderVisible = true; // Флаг для отслеживания состояния рамки
@@ -86,7 +87,6 @@ export default {
     };
 
     const fetchDataAndDrawPolygons = async () => {
-      //Функция fetchDataAndDrawPolygons() загружает данные о полях (полигонах) из API и рисует их на карте:
       try {
         if (!accessToken) {
           console.error("No access token available");
@@ -432,7 +432,7 @@ export default {
             },
           }
         );
-        console.log("Контура успешно отправлены:", response.data);
+        console.log("Контура успешно отправлены:", response.data["id"]);
 
         //в fields в sessionStorage убираем отправленное поле
         const fields = JSON.parse(sessionStorage.getItem("fields") || "[]");
@@ -444,9 +444,16 @@ export default {
         const updatedFields = fields.filter(
           (field) => field["name"] !== activeField["name"]
         );
-        // Сохраняем обновленный массив в sessionStorage
+        // Сохраняем обновленный массив в sessionStorage и добавляем id к activeField
         sessionStorage.setItem("fields", JSON.stringify(updatedFields));
-
+        sessionStorage.setItem(
+          "activeField",
+          JSON.stringify(
+            Object.assign(JSON.parse(sessionStorage.getItem("activeField")), {
+              id: response.data["id"],
+            })
+          )
+        );
         $q.notify({
           type: "positive",
           message: "Контура успешно отправлены!",
@@ -459,6 +466,22 @@ export default {
         });
       }
     };
+    // Слушатель изменений в sessionStorage
+    const handleStorageChange = (event) => {
+      if (event.key === "activeField") {
+        activeField.value = event.newValue;
+      }
+    };
+    // Watch для обработки изменений activeField
+    watch(activeField, (newValue, oldValue) => {
+      if (newValue) {
+        console.log("Рисуем полигоны для поля:", newValue);
+        drawPolygons(newValue); // Функция рисует полигоны
+      } else {
+        console.log("Удаляем полигоны с карты");
+        clearPolygons(); // Функция удаляет полигоны
+      }
+    });
     onMounted(async () => {
       selectedSeason.value =
         JSON.parse(sessionStorage.getItem("activeSeason")) || null;
@@ -514,8 +537,13 @@ export default {
       }
       // 加载已有多边形 Загрузка существующих полигонов
       // fetchDataAndDrawPolygons();
+      //если изменяется activeField sessionStorage тогда удаляются/рисуются полигоны
+      window.addEventListener("storage", handleStorageChange);
     });
-
+    onUnmounted(() => {
+      //если изменяется activeField sessionStorage тогда удаляются/рисуются полигоны
+      window.removeEventListener("storage", handleStorageChange);
+    });
     return {
       map,
       contourName,
