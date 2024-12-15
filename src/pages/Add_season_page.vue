@@ -13,11 +13,9 @@
   </div>
 </template>
 
-
 <script>
   import { ref, computed } from 'vue';
   import axios from 'axios';
-  import * as turf from '@turf/turf';
   import { useQuasar } from 'quasar';
   import { useRouter } from 'vue-router';
   import { userStore } from 'src/usage';
@@ -26,36 +24,30 @@
     name: 'AddSeasonPage',
     setup() {
       const router = useRouter();
+      const accessToken = computed(() => userStore.state.access_token);
+      
+      // Form data
       const formData = ref({
         name: '',
         seasonStart: '',
-        seasonEnd: '',
-        // id:''
+        seasonEnd: ''
       });
 
       const $q = useQuasar();
 
+      // Redirect to map page
       const goToMapPage = () => {
         router.push('/map');
       }
 
-
+      // Disable submit button if fields are not filled
       const isSubmitDisabled = computed(() => {
         return !formData.value.name || !formData.value.seasonStart || !formData.value.seasonEnd;
-      })
+      });
 
-      const accessToken = userStore.state.access_token;
-      //click submit function
+      // Submit form data
       const submitData = () => {
-        //check if everydata is exsist
-        if (!accessToken) {
-          console.error('No access token available');
-          $q.notify({
-            type: 'negative',
-            message: 'Залогиньтесь, пожалуйста'
-          })
-          return;
-        }
+        // Validate if form data is complete
         if (isSubmitDisabled.value) {
           $q.notify({
             type: 'negative',
@@ -64,42 +56,43 @@
           return;
         };
 
-        console.log('success');
-        console.log('Submitting data:', JSON.stringify(formData));
-        // axios.post('http://smart.agromelio.ru/api/v2/fields-service/season', formData.value, {
-        axios.post('http://localhost:9000/api-gateway/v2/fields-service/season', formData.value, {
+        // Prepare request data
+        const requestData = {
+          season: 'SeasonBaseDTO',  // Add season field
+          name: formData.value.name,
+          startDate: formData.value.seasonStart,
+          endDate: formData.value.seasonEnd,
+        };
+
+        console.log('Submitting data:', JSON.stringify(requestData));
+
+        // Make the API call
+        axios.post(`${process.env.VUE_APP_BASE_URL}/api/fields-service/season`, requestData, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken.value}`,
             'Content-Type': 'application/json'
           }
         })
-          .then(response => {
-            $q.notify({
-              type: 'positive',
-              message: 'Сезон успешно создан'
-            })
-            const seasonId = response.data.id;
-
-            // Роутинг: переход на страницу карты
-            // router.push({ path: '/map', query: { fieldId: fieldId } });
-
-
-            //куда все-таки надо перейти и нужно ли что-то делать с id сезона который приходит в респонсе????
-            goToMapPage();
-
+        .then(response => {
+          $q.notify({
+            type: 'positive',
+            message: 'Сезон успешно создан'
           })
-          .catch(error => {
-            if (error.response && error.response.status === 500) {
-              $q.notify({
-                type: 'negative',
-                message: 'Неизвестная ошибка'
-              })
-            }
-            console.error('Error submitting data', error);
-          });
+          const seasonId = response.data.id;
 
+          // Redirect to map page after creation
+          goToMapPage();
+        })
+        .catch(error => {
+          if (error.response && error.response.status === 500) {
+            $q.notify({
+              type: 'negative',
+              message: 'Неизвестная ошибка'
+            });
+          }
+          console.error('Error submitting data', error);
+        });
       };
-
 
       return {
         formData,
@@ -111,7 +104,6 @@
 </script>
 
 <style>
-
   .date-entering {
     line-height: 300px;
   }
@@ -130,5 +122,4 @@
   .full-width-button {
     width: 100%;
   }
-
 </style>
