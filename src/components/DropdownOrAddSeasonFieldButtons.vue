@@ -21,7 +21,7 @@
     color="primary"
     icon="add"
     class="add-button"
-    @click="goToFieldPage(activeSeason.id)"
+    @click="goToFieldPage"
   >
     <div class="button-overlay">
       <p>Добавить поле</p>
@@ -81,7 +81,6 @@
               'active-item': activeSeason && activeSeason.id === season.id,
             }"
           >
-            <!-- сделать чтобы класс работал и актив эл изменял цвет -->
             <q-item-section>
               <q-item-label>{{ season.name }}</q-item-label>
             </q-item-section>
@@ -115,7 +114,7 @@ import { useRouter, useRoute } from "vue-router";
 import { userStore } from "src/usage";
 
 import axios from "axios";
-import { ref, onMounted, computed, onBeforeUnmount } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount, watch } from "vue";
 import { useQuasar } from "quasar";
 import MapPageEditButtons from "./MapPageEditButtons.vue";
 export default {
@@ -143,9 +142,12 @@ export default {
     const fieldListAdded = ref([]); // массив полей добавленных но не отправленных на сервер
     // !!!!!!!!!!!если отправили на сервер поле, то удалять
     const fieldListSaved = ref([]); // массив полей полученных с сервера
-    const fieldList = computed(() => {
+    const fieldList = computed(() => [...fieldListAdded.value, ...fieldListSaved.value]);
+
+    /*computed(() => {
+      console.log("fieldlist", fieldList);
       return fieldListAdded.value.concat(fieldListSaved.value);
-    }); // массив полей
+    });*/ // массив полей
     const startDrawing = (isDrawing) => {
       emit("startDrawing", isDrawing);
     };
@@ -170,16 +172,22 @@ export default {
     };
     // если выбран активный сезон, то возвращать его, иначе весь список
     const filteredSeasons = computed(() => {
+      console.log("filteredSeasons");
       if (activeSeason.value) {
         return [activeSeason.value];
       }
+      //fetchFields(activeSeason.value.id); // Принудительное обновлени
       return seasonsList.value;
     });
     // если выбрано активное поле, то возвращать его, иначе весь список
     const filteredFields = computed(() => {
       if (activeField.value) {
+        console.log("active field only");
         return [activeField.value];
       }
+      console.log("all field list");
+      console.log(fieldList.value);
+      console.log(fieldListSaved.value);
       return fieldList.value;
     });
     const fetchSeasons = async () => {
@@ -217,15 +225,7 @@ export default {
         console.log("Didn't get fields");
       }
     };
-    const handleStorageChange = (event) => {
-      if (event.key === "fields") {
-        try {
 
-        } catch (error) {
-          console.error("Failed to update fields from sessionStorage:", error);
-        }
-      }
-    };
     watch(
       () => props.updateFields,
       (newValue) => {
@@ -240,7 +240,10 @@ export default {
           const activeSeasonData = sessionStorage.getItem("activeSeason");
           if (activeSeasonData) {
             fetchFields(JSON.parse(activeSeasonData)["id"]);
+            //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);
+
           }
+
         }
       }
     );
@@ -254,14 +257,17 @@ export default {
         if (sessionStorage.getItem("fields")) {
           fieldListAdded.value = JSON.parse(sessionStorage.getItem("fields"));
         }
+        fetchFields();
       }
 
       fetchSeasons();
+      console.log("seasons:", seasonsList.value);
       console.log("fields:", fieldList.value);
     });
 
     const chooseActiveSeason = (season) => {
       if (!activeSeason.value) {
+        console.log("activeSSSS");
         activeSeason.value = season;
         sessionStorage.setItem(
           "activeSeason",
@@ -269,6 +275,8 @@ export default {
         );
         // получаем список полей сезона
         fetchFields(activeSeason.value.id);
+        console.log("fethcing fields", fieldListSaved.value);
+        //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);
       } else {
         activeSeason.value = null;
         sessionStorage.removeItem("activeSeason");
@@ -280,6 +288,8 @@ export default {
           emit("selectedField");
           fieldListAdded.value = [];
           fieldListSaved.value = [];
+          console.log("clearing")
+          //fieldList.value = [];
         }
       }
     };
@@ -300,6 +310,10 @@ export default {
         console.log("activeF = 0");
         activeField.value = null;
         sessionStorage.removeItem("activeField");
+        //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);
+        activeSeason.value = JSON.parse(sessionStorage.getItem("activeSeason"));
+        fetchFields(activeSeason.value.id);
+
       }
       console.log(activeField.value);
       emit("selectedField");

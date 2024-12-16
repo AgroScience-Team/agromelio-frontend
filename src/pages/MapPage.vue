@@ -198,6 +198,7 @@ export default {
     };
     const fetchDataAndDrawPolygons = async () => {
       console.log("fetchplogons");
+      if(selectedField.value.id){
       try {
         if (!accessToken) {
           console.error("No access token available");
@@ -291,7 +292,7 @@ export default {
         });
       } catch (error) {
         console.error("Error fetching contours data:", error);
-      }
+      }}
     };
 
     // Переход к странице добавления поля
@@ -599,7 +600,7 @@ export default {
     };
     const updateSelectedField = () => {
       console.log("update selected field");
-      selectedField.value = sessionStorage.getItem("activeField") ? JSON.parse(JSON.parse(sessionStorage.getItem("activeField"))) : null;
+      selectedField.value = sessionStorage.getItem("activeField") ? (JSON.parse(sessionStorage.getItem("activeField"))) : null;
     };
     // Watch для обработки изменений activeField
     watch(selectedField, (newValue) => {
