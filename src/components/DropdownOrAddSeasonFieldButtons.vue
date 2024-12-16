@@ -30,7 +30,6 @@
   <!-- seasons получаем в onmounted, отображать список если массив не пустой, иначе есть только кнопка добавления сезона
    если нет полей есть кнопка добавления поля -->
   <div class="season-field">
-
     <!-- выбираем поле, появляется после того как выбрали сезон и если полей нет, то отображается кнопка добавления поля -->
     <div v-if="fieldList.length !== 0" class="dropdown-button q-pa-md">
       <q-btn-dropdown
@@ -55,8 +54,8 @@
             </q-item-section>
           </q-item>
           <q-item
-          v-if="!activeField"
-          clickable
+            v-if="!activeField"
+            clickable
             v-close-popup
             @click="goToFieldPage()"
             dense
@@ -102,7 +101,7 @@
         </q-list>
       </q-btn-dropdown>
     </div>
-      </div>
+  </div>
   <map-page-edit-buttons
     v-if="activeField && activeSeason"
     @startDrawing="startDrawing"
@@ -123,6 +122,12 @@ export default {
   name: "DropdownOrAddSeasonFieldButtons",
   components: {
     MapPageEditButtons,
+  },
+  props: {
+    updateFields: {
+      type: Boolean,
+      required: true,
+    },
   },
   setup(props, { emit }) {
     const router = useRouter();
@@ -206,28 +211,39 @@ export default {
             },
           }
         );
-        console.log(response.data);
+        console.log("fields on server ", response.data);
         fieldListSaved.value = response.data;
       } catch (error) {
         console.log("Didn't get fields");
       }
     };
     const handleStorageChange = (event) => {
-      //обновляем поля которые сохранены локально и на сервере, когда отправили поле с контурами на сервер
       if (event.key === "fields") {
         try {
-          fieldListAdded.value = JSON.parse(event.newValue || "[]");
+
+        } catch (error) {
+          console.error("Failed to update fields from sessionStorage:", error);
+        }
+      }
+    };
+    watch(
+      () => props.updateFields,
+      (newValue) => {
+              //обновляем поля которые сохранены локально и на сервере, когда отправили поле с контурами на сервер
+
+        if (newValue) {
+          console.log("Event triggered from parent!");
+          // Выполняем какую-то логику
+          fieldListAdded.value = sessionStorage.getItem("fields") ? JSON.parse(sessionStorage.getItem("fields")) : [];
           console.log("Updated local fields:", fieldListAdded.value);
 
           const activeSeasonData = sessionStorage.getItem("activeSeason");
           if (activeSeasonData) {
             fetchFields(JSON.parse(activeSeasonData)["id"]);
           }
-        } catch (error) {
-          console.error("Failed to update fields from sessionStorage:", error);
         }
       }
-    };
+    );
     onMounted(async () => {
       if (sessionStorage.getItem("activeField")) {
         activeField.value = JSON.parse(sessionStorage.getItem("activeField"));
@@ -240,13 +256,10 @@ export default {
         }
       }
 
-      window.addEventListener("storage", handleStorageChange); // позволяет обнаруживать изменения, происходящие в sessionStorage
       fetchSeasons();
       console.log("fields:", fieldList.value);
     });
-    onBeforeUnmount(() => {
-      window.removeEventListener("storage", handleStorageChange); // позволяет обнаруживать изменения, происходящие в sessionStorage
-    });
+
     const chooseActiveSeason = (season) => {
       if (!activeSeason.value) {
         activeSeason.value = season;
@@ -264,19 +277,20 @@ export default {
           activeField.value = null;
           sessionStorage.removeItem("activeField");
           sessionStorage.removeItem("fields");
+          emit("selectedField");
           fieldListAdded.value = [];
           fieldListSaved.value = [];
         }
       }
     };
+
     const chooseActiveField = (field) => {
       console.log("chooose");
       console.log(activeField.value);
-console.log(fieldListAdded);
-console.log(fieldListSaved);
-console.log(filteredFields);
+      console.log(fieldListAdded);
+      console.log(fieldListSaved);
+      console.log(filteredFields);
       if (!activeField.value) {
-
         activeField.value = field;
         sessionStorage.setItem(
           "activeField",
@@ -288,6 +302,7 @@ console.log(filteredFields);
         sessionStorage.removeItem("activeField");
       }
       console.log(activeField.value);
+      emit("selectedField");
     };
     return {
       goToSeasonPage,
@@ -353,7 +368,6 @@ console.log(filteredFields);
   border-radius: 4px;
   font-family: Arial, sans-serif;
   white-space: nowrap;
-
 }
 
 .add-button:hover .button-overlay {
