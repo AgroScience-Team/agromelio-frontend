@@ -40,6 +40,7 @@
       @selectedField="updateSelectedField"
       @isEditMode="toggleEditMode"
       :updateFields="updateFieldsInChild"
+      :polygonIsFinished="polygonIsFinished"
     ></dropdown-or-add-season-field-buttons>
   </div>
 </template>
@@ -114,51 +115,48 @@ export default {
     };
     const contourItems = ref([]);
 
-    watch(isEditMode, (newVal) => {
-  console.log('isEditMode changed to:', newVal);
-});
     const fetchDataAndDrawPolygons = async () => {
-  console.log("fetchplogons");
-  if (selectedField.value.id) {
-    try {
-      if (!accessToken) {
-        console.error("No access token available");
+      console.log("fetchplogons");
+      if (selectedField.value.id) {
+        try {
+          if (!accessToken) {
+            console.error("No access token available");
 
-        $q.notify({
-          type: "negative",
-          message: "Залогиньтесь, пожалуйста",
-        });
-        return;
-      }
+            $q.notify({
+              type: "negative",
+              message: "Залогиньтесь, пожалуйста",
+            });
+            return;
+          }
 
-      const response = await axios.get(
-        `${process.env.VUE_APP_BASE_URL}/api/fields-service/fields/${selectedField.value.id}/contours`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("contoures got ", response.data);
-      const contours = response.data;
+          const response = await axios.get(
+            `${process.env.VUE_APP_BASE_URL}/api/fields-service/fields/${selectedField.value.id}/contours`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          console.log("contoures got ", response.data);
+          const contours = response.data;
 
-      // Используем for...of для обработки асинхронных данных
-      for (const contour of contours) {
-        const coordinates = contour.coordinates.map((coord) => [
-          coord.latitude,
-          coord.longitude,
-        ]);
+          // Используем for...of для обработки асинхронных данных
+          for (const contour of contours) {
+            const coordinates = contour.coordinates.map((coord) => [
+              coord.latitude,
+              coord.longitude,
+            ]);
 
-        const polygonColor = `#${contour.color}`;
-        const polygon = L.polygon(coordinates, {
-          color: polygonColor,
-          fillColor: polygonColor,
-          fillOpacity: 0.5,
-        }).addTo(map.value);
-        console.log("отрисовали контур");
+            const polygonColor = `#${contour.color}`;
+            const polygon = L.polygon(coordinates, {
+              color: polygonColor,
+              fillColor: polygonColor,
+              fillOpacity: 0.5,
+            }).addTo(map.value);
+            console.log("отрисовали контур");
 
-        const popupContent = `
+            const popupContent = `
           <div class="popup-content">
           <strong class="contour-name">${contour.name}</strong>  <br><br>
           <text>Принадлежность к полю:</text> <br>
@@ -166,79 +164,93 @@ export default {
              JSON.parse(sessionStorage.getItem("activeField")).name
            }</strong>  <br>
              <div class="button-container">
-          <button id="contour-info-${contour.id}" class="details-button">Смотреть<br>информацию<br> о контуре</button><br>
-          <button id="field-info-${JSON.parse(sessionStorage.getItem("activeField")).id}" class="details-button">Смотреть<br>информацию<br> о поле</button><br>
+          <button id="contour-info-${
+            contour.id
+          }" class="details-button">Смотреть<br>информацию<br> о контуре</button><br>
+          <button id="field-info-${
+            JSON.parse(sessionStorage.getItem("activeField")).id
+          }" class="details-button">Смотреть<br>информацию<br> о поле</button><br>
           </div>
-          <div id="meteo-data-${selectedField.value.id}" class="meteo-data">Загрузка...</div>
+          <div id="meteo-data-${
+            selectedField.value.id
+          }" class="meteo-data">Загрузка...</div>
           </div>
         `;
 
-        // Связываем попап с полигоном
-        polygon.bindPopup(popupContent);
-// Обработчик клика по полигону
-// Обработчик клика по полигону
-polygon.on("click", (e) => {
-  console.log("click", isEditMode.value);
-  if (isEditMode.value) {
-    console.log("Editing mode active. Opening edit modal...");
-    polygon.closePopup(); // Закрываем попап
-    colorDialog.value = true; // Открываем диалог редактирования
-  } else {
-    console.log("Editing mode inactive. Opening popup...");
-    polygon.closePopup(); // Закрываем попап, если он был открыт
-    polygon.openPopup(); // Открываем попап в режиме просмотра
-  }
-});
-
-
-        polygon.on("popupopen", async () => {
-          // Если в режиме редактирования, попап не открывается
-          if (isEditMode.value) {
-            polygon.closePopup(); // Закрываем попап
-            colorDialog.value = true; // Открытие диалога для редактирования
-            return;
-          }
-
-          const contourInfoButton = document.getElementById(`contour-info-${contour.id}`);
-          contourInfoButton.addEventListener("click", () =>
-            handleContourPopupClick(contour.id)
-          );
-
-          const fieldInfoButton = document.getElementById(`field-info-${contour.id}`);
-          fieldInfoButton.addEventListener("click", () =>
-            handleFieldPopupClick(
-              JSON.parse(sessionStorage.getItem("activeField")).id
-            )
-          );
-
-          try {
-            console.log(selectedField.value.id);
-            const meteoResponse = await axios.get(
-              `${process.env.VUE_APP_BASE_URL}/api/meteo/preview/${selectedField.value.id}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  "Content-Type": "application/json",
-                },
+            // Связываем попап с полигоном
+            polygon.bindPopup(popupContent);
+            // Обработчик клика по полигону
+            // Обработчик клика по полигону
+            polygon.on("click", (e) => {
+              console.log("click", isEditMode.value);
+              if (isEditMode.value) {
+                console.log("Editing mode active. Opening edit modal...");
+                polygon.closePopup(); // Закрываем попап
+                currentLayer.value = polygon;
+                colorDialog.value = true; // Открываем диалог редактирования
+              } else {
+                console.log("Editing mode inactive. Opening popup...");
+                polygon.closePopup(); // Закрываем попап, если он был открыт
+                polygon.openPopup(); // Открываем попап в режиме просмотра
               }
-            );
-            const meteoData = meteoResponse.data;
-            document.getElementById(`meteo-data-${selectedField.value.id}`).innerHTML = `
+            });
+
+            polygon.on("popupopen", async () => {
+              // Если в режиме редактирования, попап не открывается
+              if (isEditMode.value) {
+                polygon.closePopup(); // Закрываем попап
+                colorDialog.value = true; // Открытие диалога для редактирования
+                return;
+              }
+
+              const contourInfoButton = document.getElementById(
+                `contour-info-${contour.id}`
+              );
+              contourInfoButton.addEventListener("click", () =>
+                handleContourPopupClick(contour.id)
+              );
+
+              const fieldInfoButton = document.getElementById(
+                `field-info-${contour.id}`
+              );
+              fieldInfoButton.addEventListener("click", () =>
+                handleFieldPopupClick(
+                  JSON.parse(sessionStorage.getItem("activeField")).id
+                )
+              );
+
+              try {
+                console.log(selectedField.value.id);
+                const meteoResponse = await axios.get(
+                  `${process.env.VUE_APP_BASE_URL}/api/meteo/preview/${selectedField.value.id}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+                const meteoData = meteoResponse.data;
+                document.getElementById(
+                  `meteo-data-${selectedField.value.id}`
+                ).innerHTML = `
               <div class="meteo-item"><i class="meteo-icon fas fa-thermometer-half"></i>Температура: ${meteoData.temperature} °C</div>
               <div class="meteo-item"><i class="meteo-icon fas fa-tint"></i>Влажность: ${meteoData.humidity} %</div>
               <div class="meteo-item"><i class="meteo-icon fas fa-wind"></i>Скорость ветра: ${meteoData.wind_speed} м/с</div>
             `;
-          } catch (error) {
-            console.error("Error fetching meteo data:", error);
-            document.getElementById(`meteo-data-${selectedField.value.id}`).innerHTML = " Нет метеоданных.";
+              } catch (error) {
+                console.error("Error fetching meteo data:", error);
+                document.getElementById(
+                  `meteo-data-${selectedField.value.id}`
+                ).innerHTML = " Нет метеоданных.";
+              }
+            });
           }
-        });
+        } catch (error) {
+          console.error("Error fetching contours data:", error);
+        }
       }
-    } catch (error) {
-      console.error("Error fetching contours data:", error);
-    }
-  }
-};
+    };
 
     // Переход к странице добавления поля
     const goToAddPage = () => {
@@ -279,9 +291,11 @@ polygon.on("click", (e) => {
     let drawControl = null;
     let drawnHandler = null; // Объявляем переменную для обработчика
     let selectedPolygon = null; // Переменная для хранения выделенного полигона
+    const polygonIsFinished = ref(false);
     const startDrawing = (isDrawing) => {
       isDrawingEnabled.value = isDrawing;
       console.log("isDrawing ", isDrawing);
+
       if (isDrawingEnabled.value) {
         if (!drawControl) {
           drawControl = new L.Draw.Polygon(map.value, {
@@ -294,8 +308,8 @@ polygon.on("click", (e) => {
 
         if (!drawnHandler) {
           drawnHandler = (event) => {
+            polygonIsFinished.value = false;
             console.log("start of drawhandle");
-            //polygon = [];
             const layer = event.layer;
             // добавляем чтобы можно было дать имя полигону
             layer.feature = layer.feature || { type: "Feature" };
@@ -376,11 +390,12 @@ polygon.on("click", (e) => {
             });
             console.log("Polygon coordinates:", layer.getLatLngs());
 
-            // Проверка на существование и добавление слоя
-            drawnItems.addLayer(layer);
-            map.value.addLayer(drawnItems); // Это также может потребоваться
-            currentLayer = layer;
+            // передаем сообщение о том что рисование было закончено из-за того что замкнули полигон, и не нужно нажимать на кнопку, чтобы выключить его
 
+            drawnItems.addLayer(layer);
+            map.value.addLayer(drawnItems);
+            currentLayer = layer;
+            polygonIsFinished.value = true;
             colorDialog.value = true;
           };
 
@@ -602,6 +617,7 @@ polygon.on("click", (e) => {
       updateSelectedField,
       updateFieldsInChild,
       toggleEditMode,
+      polygonIsFinished,
     };
   },
 };

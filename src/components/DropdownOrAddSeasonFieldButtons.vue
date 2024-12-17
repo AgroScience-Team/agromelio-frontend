@@ -108,6 +108,7 @@
     @undoLastAction="undoLastAction"
     @postContours="postContours"
     @isEditMode="toggleEditMode"
+    :polygonIsFinished="localPolygonIsFinished"
   ></map-page-edit-buttons>
 </template>
 <script>
@@ -115,7 +116,15 @@ import { useRouter, useRoute } from "vue-router";
 import { userStore } from "src/usage";
 
 import axios from "axios";
-import { ref, onMounted, computed, onBeforeUnmount, watch } from "vue";
+import {
+  ref,
+  onMounted,
+  computed,
+  onBeforeUnmount,
+  watch,
+  defineProps,
+} from "vue";
+
 import { useQuasar } from "quasar";
 import MapPageEditButtons from "./MapPageEditButtons.vue";
 export default {
@@ -128,6 +137,10 @@ export default {
       type: Boolean,
       required: true,
     },
+    polygonIsFinished: {
+      type: Boolean,
+      required: true,
+    },
   },
   setup(props, { emit }) {
     const router = useRouter();
@@ -137,7 +150,6 @@ export default {
     // Получаем доступ к методам карты
     const mapRef = ref(null);
     const activeSeason = ref(null);
-
     const activeField = ref(null);
     const seasonsList = ref([]); // массив сезонов
     const fieldListAdded = ref([]); // массив полей добавленных но не отправленных на сервер
@@ -162,7 +174,6 @@ export default {
     };
     const toggleEditMode = (isEditMode) => {
       emit("isEditMode", isEditMode);
-      console.log("edit mode child");
     };
     const goToSeasonPage = () => {
       console.log("Go to season page");
@@ -235,7 +246,6 @@ export default {
         //обновляем поля которые сохранены локально и на сервере, когда отправили поле с контурами на сервер
 
         if (newValue) {
-          console.log("Event triggered from parent!");
           // Выполняем какую-то логику
           fieldListAdded.value = sessionStorage.getItem("fields")
             ? JSON.parse(sessionStorage.getItem("fields"))
@@ -260,7 +270,7 @@ export default {
         if (sessionStorage.getItem("fields")) {
           fieldListAdded.value = JSON.parse(sessionStorage.getItem("fields"));
         }
-        fetchFields();
+        fetchFields(activeSeason.value.id);
       }
 
       fetchSeasons();
@@ -320,6 +330,17 @@ export default {
       console.log(activeField.value);
       emit("selectedField");
     };
+
+    // Локальное состояние на основе пропса
+    const localPolygonIsFinished = ref(props.polygonIsFinished);
+
+    // Слежение за изменением пропса и обновление локального состояния
+    watch(
+      () => props.polygonIsFinished,
+      (newVal) => {
+        localPolygonIsFinished.value = newVal;
+      }
+    );
     return {
       goToSeasonPage,
       goToFieldPage,
@@ -336,6 +357,7 @@ export default {
       undoLastAction,
       postContours,
       toggleEditMode,
+      localPolygonIsFinished,
     };
   },
 };
