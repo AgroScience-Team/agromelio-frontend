@@ -96,7 +96,6 @@ export default {
     let currentLayer = null; // 当前绘制的多边形图层 Текущий слой нарисованных полигонов
     const toggleEditMode = (isEditModeOn) => {
       isEditMode.value = isEditModeOn;
-      console.log("edit mode parent", isEditMode.value);
     };
     const handleContourPopupClick = (fieldId) => {
       router.push(`/field_information?fieldId=${fieldId}`);
@@ -106,7 +105,6 @@ export default {
     };
 
     const clearPolygons = () => {
-      console.log("очищаем");
       map.value.eachLayer((layer) => {
         if (layer instanceof L.Polygon) {
           // Проверяем, является ли слой полигоном
@@ -155,7 +153,6 @@ export default {
               fillColor: polygonColor,
               fillOpacity: 0.5,
             }).addTo(map.value);
-            console.log("отрисовали контур");
             polygon.feature = polygon.feature || { type: "Feature" };
             polygon.feature.properties = polygon.feature.properties || {};
             polygon.feature.properties.name = contour.name;
@@ -186,7 +183,6 @@ export default {
             polygon.bindPopup(popupContent);
             // Обработчик клика по полигону
             polygon.on("click", (e) => {
-              console.log("click", isEditMode.value);
               if (isEditMode.value) {
                 console.log("Editing mode active. Opening edit modal...");
                 polygon.closePopup(); // Закрываем попап
@@ -301,22 +297,19 @@ export default {
     const polygonIsFinished = ref(false);
     const startDrawing = (isDrawing) => {
       isDrawingEnabled.value = isDrawing;
-      console.log("isDrawing ", isDrawing);
 
       if (isDrawingEnabled.value) {
         if (!drawControl) {
           drawControl = new L.Draw.Polygon(map.value, {
             shapeOptions: { color: "blue" },
           });
-          console.log("enabling drawControl");
         }
         drawControl.enable(); // Активирует режим рисования      }
-        console.log("enable");
 
         if (!drawnHandler) {
           drawnHandler = (event) => {
             polygonIsFinished.value = false;
-            console.log("start of drawhandle");
+            console.log("start of draw");
             const layer = event.layer;
             // добавляем чтобы можно было дать имя полигону
             layer.feature = layer.feature || { type: "Feature" };
@@ -357,9 +350,7 @@ export default {
 
             let isOverlap = false;
             // При создании нового полигона проверяется, не пересекается ли он с существующими:
-
-            drawnItems.eachLayer((existingLayer) => {
-              const existingPolygon = existingLayer.toGeoJSON();
+            function checkIntersection(existingPolygon, newPolygon) {
               if (
                 existingPolygon.geometry &&
                 existingPolygon.geometry.type === "Polygon" &&
@@ -370,18 +361,42 @@ export default {
                 const turfExisting = turf.polygon(
                   existingPolygon.geometry.coordinates
                 );
-                // Закрываем полигоны перед проверкой
 
-                if (turf.intersect(turfNew, turfExisting)) {
-                  console.log("intersection");
-                  isOverlap = true;
+                // Проверяем пересечение
+                const intersection = turf.intersect(turfNew, turfExisting);
+
+                // Пересечение не должно быть наложением (допускаем общие границы)
+                if (
+                  intersection &&
+                  !turf.booleanDisjoint(turfNew, turfExisting)
+                ) {
+                  console.log("Пересечение найдено!");
+                  return true;
                 }
-                // if (turf.booleanIntersects(turfNew, turfExisting)) {
-                //   isOverlap = true;
-                // }
+              }
+              return false;
+            }
+
+            // Проходимся по нарисованным элементам
+            drawnItems.eachLayer((existingLayer) => {
+              const existingPolygon = existingLayer.toGeoJSON();
+              if (checkIntersection(existingPolygon, newPolygon)) {
+                isOverlap = true;
               }
             });
-
+            // Проходимся по слоям карты
+            map.value.eachLayer((existingLayer) => {
+              // Проверяем только полигоны
+              if (
+                existingLayer instanceof L.Polygon &&
+                existingLayer !== newPolygon
+              ) {
+                const existingPolygon = layer.toGeoJSON();
+                if (checkIntersection(existingPolygon, newPolygon)) {
+                  isOverlap = true;
+                }
+              }
+            });
             if (isOverlap) {
               $q.notify({
                 type: "negative",
@@ -397,18 +412,16 @@ export default {
             });
             console.log("Polygon coordinates:", layer.getLatLngs());
 
-            // передаем сообщение о том что рисование было закончено из-за того что замкнули полигон, и не нужно нажимать на кнопку, чтобы выключить его
-
             drawnItems.addLayer(layer);
             map.value.addLayer(drawnItems);
             currentLayer = layer;
+            // передаем сообщение о том что рисование было закончено из-за того что замкнули полигон, и не нужно нажимать на кнопку, чтобы выключить его
             polygonIsFinished.value = true;
             colorDialog.value = true;
           };
 
           // Начало рисования полигона
           map.value.on("draw:drawstart", (e) => {
-            console.log("draw:drawstart");
             if (e.layerType === "polygon") {
               currentLayer = e.layer; // Сохраняем текущий слой
             }
@@ -418,7 +431,6 @@ export default {
       } else {
         console.log("else");
         if (drawControl) {
-          console.log("Disabling drawControl");
           drawControl.disable(); // Отключаем режим рисования
           if (drawnHandler) {
             map.value?.off("draw:created", drawnHandler);
@@ -453,7 +465,6 @@ export default {
     };
 
     const undoLastAction = () => {
-      console.log("undo last action");
       // если есть маркеры на карте удаляем последнюю точку
       if (
         drawControl &&
@@ -545,7 +556,6 @@ export default {
         }
       });
       if (contours.length > 0) {
-        console.log("contours ", contours);
         // если у поля есть айди то добавляем к существующему полю контуры
         if (selectedField.value.id) {
           contours.forEach(async (contour) => {

@@ -187,7 +187,6 @@ export default {
     };
     // если выбран активный сезон, то возвращать его, иначе весь список
     const filteredSeasons = computed(() => {
-      console.log("filteredSeasons");
       if (activeSeason.value) {
         return [activeSeason.value];
       }
@@ -196,12 +195,8 @@ export default {
     // если выбрано активное поле, то возвращать его, иначе весь список
     const filteredFields = computed(() => {
       if (activeField.value) {
-        console.log("active field only");
         return [activeField.value];
       }
-      console.log("all field list");
-      console.log(fieldList.value);
-      console.log(fieldListSaved.value);
       return fieldList.value;
     });
     const fetchSeasons = async () => {
@@ -280,7 +275,6 @@ export default {
 
     const chooseActiveSeason = (season) => {
       if (!activeSeason.value) {
-        console.log("activeSSSS");
         activeSeason.value = season;
         sessionStorage.setItem(
           "activeSeason",
@@ -289,7 +283,6 @@ export default {
         // получаем список полей сезона
         fetchFields(activeSeason.value.id);
         console.log("fethcing fields", fieldListSaved.value);
-        //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);
       } else {
         activeSeason.value = null;
         sessionStorage.removeItem("activeSeason");
@@ -301,18 +294,11 @@ export default {
           emit("selectedField");
           fieldListAdded.value = [];
           fieldListSaved.value = [];
-          console.log("clearing");
-          //fieldList.value = [];
         }
       }
     };
 
     const chooseActiveField = (field) => {
-      console.log("chooose");
-      console.log(activeField.value);
-      console.log(fieldListAdded);
-      console.log(fieldListSaved);
-      console.log(filteredFields);
       if (!activeField.value) {
         activeField.value = field;
         sessionStorage.setItem(
@@ -320,7 +306,6 @@ export default {
           JSON.stringify(activeField.value)
         );
       } else {
-        console.log("activeF = 0");
         activeField.value = null;
         sessionStorage.removeItem("activeField");
         //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);

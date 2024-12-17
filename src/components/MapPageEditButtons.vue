@@ -97,7 +97,6 @@ export default {
     const editModeOn = ref(false);
     const isDrawing = ref(false);
     const startDrawing = () => {
-      console.log("props.polygonIsFinished", props.polygonIsFinished);
       if (!props.polygonIsFinished) {
         isDrawing.value = !isDrawing.value;
       }
