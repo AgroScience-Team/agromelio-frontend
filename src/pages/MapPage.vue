@@ -31,6 +31,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
     <!-- кнопки для добаления сезона/поля выпадающий список из сезонов/полей -->
     <dropdown-or-add-season-field-buttons
       @startDrawing="startDrawing"
@@ -155,6 +156,10 @@ export default {
               fillOpacity: 0.5,
             }).addTo(map.value);
             console.log("отрисовали контур");
+            polygon.feature = polygon.feature || { type: "Feature" };
+            polygon.feature.properties = polygon.feature.properties || {};
+            polygon.feature.properties.name = contour.name;
+            polygon.feature.properties.id = contour.id;
 
             const popupContent = `
           <div class="popup-content">
@@ -180,14 +185,15 @@ export default {
             // Связываем попап с полигоном
             polygon.bindPopup(popupContent);
             // Обработчик клика по полигону
-            // Обработчик клика по полигону
             polygon.on("click", (e) => {
               console.log("click", isEditMode.value);
               if (isEditMode.value) {
                 console.log("Editing mode active. Opening edit modal...");
                 polygon.closePopup(); // Закрываем попап
-                currentLayer.value = polygon;
+                currentLayer = polygon;
+                contourName.value = polygon.feature.properties.name;
                 colorDialog.value = true; // Открываем диалог редактирования
+                selectedPolygon = polygon;
               } else {
                 console.log("Editing mode inactive. Opening popup...");
                 polygon.closePopup(); // Закрываем попап, если он был открыт
@@ -271,7 +277,6 @@ export default {
       if (!isNameInvalid.value) {
         return; // Если имя пустое, не закрываем окно
       }
-
       if (currentLayer) {
         currentLayer.setStyle({
           color: selectedColor.value,
@@ -279,7 +284,9 @@ export default {
           fillOpacity: 0.5,
         });
         currentLayer.feature.properties.name = contourName.value;
-        drawnItems.addLayer(currentLayer); // Убедитесь, что полигон добавляется в drawnItems
+        if (!drawnItems.hasLayer(currentLayer)) {
+          drawnItems.addLayer(currentLayer);
+        }
         currentLayer = null;
       }
       colorDialog.value = false;
@@ -424,8 +431,16 @@ export default {
     const removeSelectedPolygon = () => {
       if (selectedPolygon) {
         deleteStack.push(selectedPolygon);
-        drawnItems.removeLayer(selectedPolygon); // Удаляем слой из группы
-        map.value.removeLayer(selectedPolygon); // Удаляем с карты
+        // Удаляем слой из группы
+        if (drawnItems.hasLayer(selectedPolygon)) {
+          drawnItems.removeLayer(selectedPolygon);
+        }
+
+        // Удаляем слой с карты
+        if (map.value.hasLayer(selectedPolygon)) {
+          map.value.removeLayer(selectedPolygon);
+        }
+
         selectedPolygon = null; // Сбрасываем выбранный полигон
         console.log("Selected polygon removed");
       } else {
@@ -466,6 +481,7 @@ export default {
       }
     };
     const updateFieldsInChild = ref(false); //чтобы обновить поля в ребенке после того как они отправились на сервер
+
     const postContours = async () => {
       if (!accessToken) {
         console.error("No access token available");
@@ -478,85 +494,218 @@ export default {
 
       // преобразовываем координаты и имена контуров в массив
       const contours = [];
-      drawnItems.eachLayer((layer) => {
+      drawnItems.eachLayer(async (layer) => {
         if (layer instanceof L.Polygon) {
-          const geoJson = layer.toGeoJSON();
-          // Извлекаем координаты из GeoJSON
-          let coordinates = geoJson.geometry.coordinates[0].map((coord) => ({
-            longitude: coord[0], // lng
-            latitude: coord[1], // lat
-          }));
-          contours.push({
-            contour: "ContourBaseDTO",
-            name: layer.feature.properties.name,
-            color: layer.options.fillColor.replace("#", ""),
-            squareArea: turf.area(geoJson).toFixed(2), // Площадь в квадратных метрах, округлена до двух знаков
-            coordinates: coordinates,
-          });
+          if (layer.feature.properties.id) {
+            try {
+              const response = await axios.put(
+                `${process.env.VUE_APP_BASE_URL}/api/fields-service/contour`,
+                {
+                  name: layer.feature.properties.name,
+                  color: layer.options.fillColor.replace("#", ""),
+                  contour: "UpdateContourDTO",
+                },
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  params: {
+                    id: layer.feature.properties.id,
+                  },
+                }
+              );
+              console.log("Контур успешно отправлен:");
+              $q.notify({
+                type: "positive",
+                message: "Контура успешно отправлены!",
+              });
+            } catch (error) {
+              console.error("Ошибка при отправке контуров:", error);
+              $q.notify({
+                type: "negative",
+                message: "Ошибка при отправке данных!",
+              });
+            }
+          } else {
+            const geoJson = layer.toGeoJSON();
+            // Извлекаем координаты из GeoJSON
+            let coordinates = geoJson.geometry.coordinates[0].map((coord) => ({
+              longitude: coord[0], // lng
+              latitude: coord[1], // lat
+            }));
+            contours.push({
+              contour: "ContourBaseDTO",
+              name: layer.feature.properties.name,
+              color: layer.options.fillColor.replace("#", ""),
+              squareArea: turf.area(geoJson).toFixed(2), // Площадь в квадратных метрах, округлена до двух знаков
+              coordinates: coordinates,
+            });
+          }
         }
       });
-      console.log("contours ", contours);
-      const fieldToPost = {
-        name: JSON.parse(sessionStorage.getItem("activeField"))["name"],
-        description: JSON.parse(sessionStorage.getItem("activeField"))[
-          "description"
-        ],
-        field: "FieldDTO",
-        contours: contours,
-      };
-      console.log("field: ", fieldToPost);
+      if (contours.length > 0) {
+        console.log("contours ", contours);
+        // если у поля есть айди то добавляем к существующему полю контуры
+        if (selectedField.value.id) {
+          contours.forEach(async (contour) => {
+            try {
+              const response = await axios.post(
+                `${process.env.VUE_APP_BASE_URL}/api/fields-service/fields/${selectedField.value.id}/contour`,
+                contour,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+              console.log(
+                "Контур успешно добавлен к полю:",
+                response.data["id"]
+              );
 
-      try {
-        const response = await axios.post(
-          `${process.env.VUE_APP_BASE_URL}/api/fields-service/seasons/${
-            JSON.parse(sessionStorage.getItem("activeSeason"))["id"]
-          }/field`,
-          fieldToPost,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
+              //мб можно добавить сразу айди к контуру
+
+              $q.notify({
+                type: "positive",
+                message: "Контур успешно отправлен!",
+              });
+            } catch (error) {
+              console.error("Ошибка при отправке контуров:", error);
+              $q.notify({
+                type: "negative",
+                message: "Ошибка при отправке данных!",
+              });
+            }
+          });
+        } else {
+          const fieldToPost = {
+            name: JSON.parse(sessionStorage.getItem("activeField"))["name"],
+            description: JSON.parse(sessionStorage.getItem("activeField"))[
+              "description"
+            ],
+            field: "FieldDTO",
+            contours: contours,
+          };
+          console.log("field: ", fieldToPost);
+
+          try {
+            const response = await axios.post(
+              `${process.env.VUE_APP_BASE_URL}/api/fields-service/seasons/${
+                JSON.parse(sessionStorage.getItem("activeSeason"))["id"]
+              }/field`,
+              fieldToPost,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            console.log("Контура успешно отправлены:", response.data["id"]);
+
+            //в fields в sessionStorage убираем отправленное поле
+            const fields = JSON.parse(sessionStorage.getItem("fields") || "[]");
+            const activeField = JSON.parse(
+              sessionStorage.getItem("activeField") || "[]"
+            ); // Пример activeField с id
+
+            // Удаляем объект, где id совпадает с activeField.id
+            const updatedFields = fields.filter(
+              (field) => field["name"] !== activeField["name"]
+            );
+            // Сохраняем обновленный массив в sessionStorage и добавляем id к activeField
+            sessionStorage.setItem("fields", JSON.stringify(updatedFields));
+            sessionStorage.setItem(
+              "activeField",
+              JSON.stringify(
+                Object.assign(
+                  JSON.parse(sessionStorage.getItem("activeField")),
+                  {
+                    id: response.data["id"],
+                  }
+                )
+              )
+            );
+            $q.notify({
+              type: "positive",
+              message: "Контура успешно отправлены!",
+            });
+          } catch (error) {
+            console.error("Ошибка при отправке контуров:", error);
+            $q.notify({
+              type: "negative",
+              message: "Ошибка при отправке данных!",
+            });
           }
-        );
-        console.log("Контура успешно отправлены:", response.data["id"]);
-
-        //в fields в sessionStorage убираем отправленное поле
-        const fields = JSON.parse(sessionStorage.getItem("fields") || "[]");
-        const activeField = JSON.parse(
-          sessionStorage.getItem("activeField") || "[]"
-        ); // Пример activeField с id
-
-        // Удаляем объект, где id совпадает с activeField.id
-        const updatedFields = fields.filter(
-          (field) => field["name"] !== activeField["name"]
-        );
-        // Сохраняем обновленный массив в sessionStorage и добавляем id к activeField
-        sessionStorage.setItem("fields", JSON.stringify(updatedFields));
-        sessionStorage.setItem(
-          "activeField",
-          JSON.stringify(
-            Object.assign(JSON.parse(sessionStorage.getItem("activeField")), {
-              id: response.data["id"],
-            })
-          )
-        );
-        $q.notify({
-          type: "positive",
-          message: "Контура успешно отправлены!",
-        });
-      } catch (error) {
-        console.error("Ошибка при отправке контуров:", error);
-        $q.notify({
-          type: "negative",
-          message: "Ошибка при отправке данных!",
-        });
+          updateFieldsInChild.value = true; // Переключаем состояние на true
+          setTimeout(() => {
+            eventTriggered.value = false; // Переключаем обратно на false после задержки
+          }, 1000); // Задержка в 1 секунду}
+        }
       }
-      updateFieldsInChild.value = true; // Переключаем состояние на true
-      setTimeout(() => {
-        eventTriggered.value = false; // Переключаем обратно на false после задержки
-      }, 1000); // Задержка в 1 секунду
+      if (deleteStack.length > 0) {
+        for (const deletedPolygon of deleteStack) {
+          if (deletedPolygon.feature.properties.id) {
+            try {
+              const response = await axios.delete(
+                `${process.env.VUE_APP_BASE_URL}/api/fields-service/contour`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  params: {
+                    id: deletedPolygon.feature.properties.id,
+                  },
+                }
+              );
+              console.log("Контур успешно удален");
+            } catch (error) {
+              console.error("Ошибка при удалении контуров:", error);
+              $q.notify({
+                type: "negative",
+                message: "Ошибка при отправке данных!",
+              });
+            }
+          }
+        }
+        //  проверка нужно ли удалять поле (если удаляются все контуры)
+        let hasPolygonsOnMap = false;
+        map.value.eachLayer((layer) => {
+          if (layer instanceof L.Polygon) {
+            hasPolygonsOnMap = true; // Если найден полигон
+            return true; // Прерываем выполнение метода после нахождения первого полигона
+          }
+        });
+
+        if (!hasPolygonsOnMap && selectedField.value.id) {
+          try {
+            const response = await axios.delete(
+              `${process.env.VUE_APP_BASE_URL}/api/fields-service/field`,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                params: {
+                  id: selectedField.value.id,
+                },
+              }
+            );
+            console.log("Поле успешно удалено");
+          } catch (error) {
+            console.error("Ошибка при удалении контуров:", error);
+            $q.notify({
+              type: "negative",
+              message: "Ошибка при удалении поля!",
+            });
+          }
+        }
+      }
     };
+
     const updateSelectedField = () => {
       console.log("update selected field");
       selectedField.value = sessionStorage.getItem("activeField")
