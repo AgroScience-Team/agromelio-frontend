@@ -107,6 +107,7 @@
     @removeSelectedPolygon="removeSelectedPolygon"
     @undoLastAction="undoLastAction"
     @postContours="postContours"
+    @isEditMode="toggleEditMode"
   ></map-page-edit-buttons>
 </template>
 <script>
@@ -142,12 +143,11 @@ export default {
     const fieldListAdded = ref([]); // массив полей добавленных но не отправленных на сервер
     // !!!!!!!!!!!если отправили на сервер поле, то удалять
     const fieldListSaved = ref([]); // массив полей полученных с сервера
-    const fieldList = computed(() => [...fieldListAdded.value, ...fieldListSaved.value]);
+    const fieldList = computed(() => [
+      ...fieldListAdded.value,
+      ...fieldListSaved.value,
+    ]);
 
-    /*computed(() => {
-      console.log("fieldlist", fieldList);
-      return fieldListAdded.value.concat(fieldListSaved.value);
-    });*/ // массив полей
     const startDrawing = (isDrawing) => {
       emit("startDrawing", isDrawing);
     };
@@ -159,6 +159,10 @@ export default {
     };
     const postContours = () => {
       emit("postContours");
+    };
+    const toggleEditMode = (isEditMode) => {
+      emit("isEditMode", isEditMode);
+      console.log("edit mode child");
     };
     const goToSeasonPage = () => {
       console.log("Go to season page");
@@ -176,7 +180,6 @@ export default {
       if (activeSeason.value) {
         return [activeSeason.value];
       }
-      //fetchFields(activeSeason.value.id); // Принудительное обновлени
       return seasonsList.value;
     });
     // если выбрано активное поле, то возвращать его, иначе весь список
@@ -229,21 +232,21 @@ export default {
     watch(
       () => props.updateFields,
       (newValue) => {
-              //обновляем поля которые сохранены локально и на сервере, когда отправили поле с контурами на сервер
+        //обновляем поля которые сохранены локально и на сервере, когда отправили поле с контурами на сервер
 
         if (newValue) {
           console.log("Event triggered from parent!");
           // Выполняем какую-то логику
-          fieldListAdded.value = sessionStorage.getItem("fields") ? JSON.parse(sessionStorage.getItem("fields")) : [];
+          fieldListAdded.value = sessionStorage.getItem("fields")
+            ? JSON.parse(sessionStorage.getItem("fields"))
+            : [];
           console.log("Updated local fields:", fieldListAdded.value);
 
           const activeSeasonData = sessionStorage.getItem("activeSeason");
           if (activeSeasonData) {
             fetchFields(JSON.parse(activeSeasonData)["id"]);
             //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);
-
           }
-
         }
       }
     );
@@ -288,7 +291,7 @@ export default {
           emit("selectedField");
           fieldListAdded.value = [];
           fieldListSaved.value = [];
-          console.log("clearing")
+          console.log("clearing");
           //fieldList.value = [];
         }
       }
@@ -313,7 +316,6 @@ export default {
         //fieldList.value = fieldListAdded.value.concat(fieldListSaved.value);
         activeSeason.value = JSON.parse(sessionStorage.getItem("activeSeason"));
         fetchFields(activeSeason.value.id);
-
       }
       console.log(activeField.value);
       emit("selectedField");
@@ -333,6 +335,7 @@ export default {
       removeSelectedPolygon,
       undoLastAction,
       postContours,
+      toggleEditMode,
     };
   },
 };

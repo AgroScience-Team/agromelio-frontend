@@ -38,13 +38,21 @@
       @undoLastAction="undoLastAction"
       @postContours="postContours"
       @selectedField="updateSelectedField"
+      @isEditMode="toggleEditMode"
       :updateFields="updateFieldsInChild"
     ></dropdown-or-add-season-field-buttons>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, watch, onUnmounted, onBeforeUnmount, computed } from "vue";
+import {
+  ref,
+  onMounted,
+  watch,
+  onUnmounted,
+  onBeforeUnmount,
+  computed,
+} from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -68,11 +76,12 @@ export default {
     const $q = useQuasar();
     const accessToken = userStore.state.access_token;
     const isDrawingEnabled = ref(false);
+    const isEditMode = ref(false);
     const activeField = ref(sessionStorage.getItem("activeField"));
     let deleteStack = []; // Стек для хранения истории всех действий
     let isBorderVisible = true; // Флаг для отслеживания состояния рамки
     const contourName = ref("");
-    const isNameInvalid = computed(() => !contourName.value.trim());
+    const isNameInvalid = computed(() => contourName.value.trim());
 
     const selectedSeason = ref(
       JSON.parse(sessionStorage.getItem("activeSeason")) || null
@@ -83,109 +92,16 @@ export default {
     const colorDialog = ref(false); // 控制颜色选择对话框显示 Управление отображением диалогового окна выбора цвета
     const selectedColor = ref("#ff0000"); // 默认选中的颜色 Выбранный по умолчанию цвет
     let currentLayer = null; // 当前绘制的多边形图层 Текущий слой нарисованных полигонов
-
-    // Переход на страницу информации о поле
-    const handlePopupClick = (fieldId) => {
+    const toggleEditMode = (isEditModeOn) => {
+      isEditMode.value = isEditModeOn;
+      console.log("edit mode parent", isEditMode.value);
+    };
+    const handleContourPopupClick = (fieldId) => {
       router.push(`/field_information?fieldId=${fieldId}`);
     };
-
-    /*const fetchDataAndDrawPolygons = async () => {
-      console.log("etchDataAndDrawPolygons");
-      try {
-        if (!accessToken) {
-          console.error("No access token available");
-
-          $q.notify({
-            type: "negative",
-            message: "Залогиньтесь, пожалуйста",
-          });
-          return;
-        }
-
-        const response = await axios.get(
-          `${process.env.VUE_APP_BASE_URL}/api/fields/organization/preview`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const fields = response.data;
-
-        for (const field of fields) {
-          if (field.coordinates) {
-            const coordinates = field.coordinates.map((coord) => [
-              coord.latitude,
-              coord.longitude,
-            ]);
-
-            // Создание полигона
-            const polygon = L.polygon(coordinates, {
-              color: `#${field.color}`, // Цвет обводки
-              weight: 5, // Толщина рамки
-              opacity: 1, // Прозрачность рамки
-              fillOpacity: 0.3, // Прозрачность заливки
-            }).addTo(map.value);
-
-            // Добавление попапа с информацией
-            const cropName = field.crop?.name || "";
-            const popupContent = `
-          <div class="popup-content">
-            <strong class="field-name">${field.name}</strong><br>
-            <strong class="crop-name">${cropName}</strong><br>
-            <p class="field-description">${field.description}</p>
-            <button id="popup-button-${field.id}" class="details-button">Посмотреть подробнее информацию</button>
-            <div id="meteo-data-${field.id}" class="meteo-data">Загрузка...</div>
-          </div>
-        `;
-
-            polygon.bindPopup(popupContent).on("popupopen", async (e) => {
-              const popupButton = document.getElementById(
-                `popup-button-${field.id}`
-              );
-              popupButton.addEventListener("click", () =>
-                handlePopupClick(field.id)
-              );
-
-              // Получение метеоданных
-              try {
-                const meteoResponse = await axios.get(
-                  `${process.env.VUE_APP_BASE_URL}/api/meteo/preview/${field.id}`,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${accessToken}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-                const meteoData = meteoResponse.data;
-                document.getElementById(`meteo-data-${field.id}`).innerHTML = `
-              <div class="meteo-item"><i class="meteo-icon fas fa-thermometer-half"></i>Температура: ${meteoData.temperature} °C</div>
-              <div class="meteo-item"><i class="meteo-icon fas fa-tint"></i>Влажность: ${meteoData.humidity} %</div>
-              <div class="meteo-item"><i class="meteo-icon fas fa-wind"></i>Скорость ветра: ${meteoData.wind_speed} м/с</div>
-            `;
-              } catch (error) {
-                console.error("Error fetching meteo data:", error);
-                document.getElementById(`meteo-data-${field.id}`).innerHTML =
-                  " Нет метеоданных.";
-              }
-            });
-
-            // Обработка кликов по полигону для изменения цвета рамки
-            polygon.on("click", function () {
-              const currentColor = polygon.options.color;
-              const newColor =
-                currentColor === "#3388ff" ? "#ff5733" : "#3388ff"; // Переключение между двумя цветами
-              polygon.setStyle({ color: newColor }); // Изменение цвета рамки
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };*/
+    const handleFieldPopupClick = (fieldId) => {
+      router.push(`/field_weather_info?fieldId=${fieldId}`);
+    };
 
     const clearPolygons = () => {
       console.log("очищаем");
@@ -196,104 +112,133 @@ export default {
         }
       });
     };
+    const contourItems = ref([]);
+
+    watch(isEditMode, (newVal) => {
+  console.log('isEditMode changed to:', newVal);
+});
     const fetchDataAndDrawPolygons = async () => {
-      console.log("fetchplogons");
-      if(selectedField.value.id){
-      try {
-        if (!accessToken) {
-          console.error("No access token available");
+  console.log("fetchplogons");
+  if (selectedField.value.id) {
+    try {
+      if (!accessToken) {
+        console.error("No access token available");
 
-          $q.notify({
-            type: "negative",
-            message: "Залогиньтесь, пожалуйста",
-          });
-          return;
-        }
-
-        const response = await axios.get(
-          `${process.env.VUE_APP_BASE_URL}/api/fields-service/fields/${selectedField.value.id}/contours`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        console.log("contoures got ", response.data);
-        const contours = response.data;
-        contours.forEach(async (contour) => {
-          const coordinates = contour.coordinates.map((coord) => [
-            coord.latitude,
-            coord.longitude,
-          ]);
-
-          // Устанавливаем цвет для полигона
-          const polygonColor = `#${contour.color}`;
-          // Создаем полигон и добавляем его на карту
-          const polygon = L.polygon(coordinates, {
-            color: polygonColor,
-            fillColor: polygonColor,
-            fillOpacity: 0.5,
-          }).addTo(map.value);
-          console.log("отрисовали контур");
-          const popupContent = `
-                                <div class="popup-content">
-            <strong>${contour.name}</strong>  <br>
-            <text>Принадлежность к полю:</text> <br>
-             <strong>${contour.name}</strong>  <br>
-               <div class="button-container">
-
-            <button id="contour-info-${contour.id}" class="details-button">Смотреть<br>информацию<br> о контуре</button><br>
-            <button id="field-info-${contour.id}" class="details-button">Смотреть<br>информацию<br> о поле</button><br>
-              </div>
-              <div id="meteo-data-${selectedField.value.id}" class="meteo-data">Загрузка...</div>
-              </div>
-            `;
-          polygon.bindPopup(popupContent).on("popupopen", async (e) => {
-            const contourInfoButton = document.getElementById(
-              `contour-info-${contour.id}`
-            );
-            contourInfoButton.addEventListener("click", () =>
-              handleContourInfoClick(contour.id)
-            );
-
-            const fieldInfoButton = document.getElementById(
-              `field-info-${contour.id}`
-            );
-            fieldInfoButton.addEventListener("click", () =>
-              handleFieldInfoClick(selectedField.value.id)
-            );
-
-            try {
-              console.log(selectedField.value.id);
-              const meteoResponse = await axios.get(
-                `${process.env.VUE_APP_BASE_URL}/api/meteo/preview/${selectedField.value.id}`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
-              const meteoData = meteoResponse.data;
-              document.getElementById(`meteo-data-${field.id}`).innerHTML = `
-                <div class="meteo-item"><i class="meteo-icon fas fa-thermometer-half"></i>Температура: ${meteoData.temperature} °C</div>
-                <div class="meteo-item"><i class="meteo-icon fas fa-tint"></i>Влажность: ${meteoData.humidity} %</div>
-                <div class="meteo-item"><i class="meteo-icon fas fa-wind"></i>Скорость ветра: ${meteoData.wind_speed} м/с</div>
-                `;
-            } catch (error) {
-              console.error("Error fetching meteo data:", error);
-              document.getElementById(
-                `meteo-data-${selectedField.value.id}`
-              ).innerHTML = " Нет метеоданных.";
-            }
-          });
-          // Запрос на получение метеоданных
+        $q.notify({
+          type: "negative",
+          message: "Залогиньтесь, пожалуйста",
         });
-      } catch (error) {
-        console.error("Error fetching contours data:", error);
-      }}
-    };
+        return;
+      }
+
+      const response = await axios.get(
+        `${process.env.VUE_APP_BASE_URL}/api/fields-service/fields/${selectedField.value.id}/contours`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("contoures got ", response.data);
+      const contours = response.data;
+
+      // Используем for...of для обработки асинхронных данных
+      for (const contour of contours) {
+        const coordinates = contour.coordinates.map((coord) => [
+          coord.latitude,
+          coord.longitude,
+        ]);
+
+        const polygonColor = `#${contour.color}`;
+        const polygon = L.polygon(coordinates, {
+          color: polygonColor,
+          fillColor: polygonColor,
+          fillOpacity: 0.5,
+        }).addTo(map.value);
+        console.log("отрисовали контур");
+
+        const popupContent = `
+          <div class="popup-content">
+          <strong class="contour-name">${contour.name}</strong>  <br><br>
+          <text>Принадлежность к полю:</text> <br>
+           <strong class="field-name">${
+             JSON.parse(sessionStorage.getItem("activeField")).name
+           }</strong>  <br>
+             <div class="button-container">
+          <button id="contour-info-${contour.id}" class="details-button">Смотреть<br>информацию<br> о контуре</button><br>
+          <button id="field-info-${JSON.parse(sessionStorage.getItem("activeField")).id}" class="details-button">Смотреть<br>информацию<br> о поле</button><br>
+          </div>
+          <div id="meteo-data-${selectedField.value.id}" class="meteo-data">Загрузка...</div>
+          </div>
+        `;
+
+        // Связываем попап с полигоном
+        polygon.bindPopup(popupContent);
+// Обработчик клика по полигону
+// Обработчик клика по полигону
+polygon.on("click", (e) => {
+  console.log("click", isEditMode.value);
+  if (isEditMode.value) {
+    console.log("Editing mode active. Opening edit modal...");
+    polygon.closePopup(); // Закрываем попап
+    colorDialog.value = true; // Открываем диалог редактирования
+  } else {
+    console.log("Editing mode inactive. Opening popup...");
+    polygon.closePopup(); // Закрываем попап, если он был открыт
+    polygon.openPopup(); // Открываем попап в режиме просмотра
+  }
+});
+
+
+        polygon.on("popupopen", async () => {
+          // Если в режиме редактирования, попап не открывается
+          if (isEditMode.value) {
+            polygon.closePopup(); // Закрываем попап
+            colorDialog.value = true; // Открытие диалога для редактирования
+            return;
+          }
+
+          const contourInfoButton = document.getElementById(`contour-info-${contour.id}`);
+          contourInfoButton.addEventListener("click", () =>
+            handleContourPopupClick(contour.id)
+          );
+
+          const fieldInfoButton = document.getElementById(`field-info-${contour.id}`);
+          fieldInfoButton.addEventListener("click", () =>
+            handleFieldPopupClick(
+              JSON.parse(sessionStorage.getItem("activeField")).id
+            )
+          );
+
+          try {
+            console.log(selectedField.value.id);
+            const meteoResponse = await axios.get(
+              `${process.env.VUE_APP_BASE_URL}/api/meteo/preview/${selectedField.value.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            const meteoData = meteoResponse.data;
+            document.getElementById(`meteo-data-${selectedField.value.id}`).innerHTML = `
+              <div class="meteo-item"><i class="meteo-icon fas fa-thermometer-half"></i>Температура: ${meteoData.temperature} °C</div>
+              <div class="meteo-item"><i class="meteo-icon fas fa-tint"></i>Влажность: ${meteoData.humidity} %</div>
+              <div class="meteo-item"><i class="meteo-icon fas fa-wind"></i>Скорость ветра: ${meteoData.wind_speed} м/с</div>
+            `;
+          } catch (error) {
+            console.error("Error fetching meteo data:", error);
+            document.getElementById(`meteo-data-${selectedField.value.id}`).innerHTML = " Нет метеоданных.";
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching contours data:", error);
+    }
+  }
+};
 
     // Переход к странице добавления поля
     const goToAddPage = () => {
@@ -311,7 +256,7 @@ export default {
 
     //     Диалог выбора цвета: Пользователь может выбрать цвет, который применяется к текущему полигону.
     const applyColorSelection = () => {
-      if (!isNameInvalid()) {
+      if (!isNameInvalid.value) {
         return; // Если имя пустое, не закрываем окно
       }
 
@@ -350,7 +295,7 @@ export default {
         if (!drawnHandler) {
           drawnHandler = (event) => {
             console.log("start of drawhandle");
-            polygon = [];
+            //polygon = [];
             const layer = event.layer;
             // добавляем чтобы можно было дать имя полигону
             layer.feature = layer.feature || { type: "Feature" };
@@ -444,7 +389,6 @@ export default {
             console.log("draw:drawstart");
             if (e.layerType === "polygon") {
               currentLayer = e.layer; // Сохраняем текущий слой
-              polygon = []; // Очищаем массив точек
             }
           });
           map.value?.on("draw:created", drawnHandler);
@@ -593,14 +537,16 @@ export default {
           message: "Ошибка при отправке данных!",
         });
       }
-      updateFieldsInChild.value = true;  // Переключаем состояние на true
-  setTimeout(() => {
-    eventTriggered.value = false;  // Переключаем обратно на false после задержки
-  }, 1000);  // Задержка в 1 секунду
+      updateFieldsInChild.value = true; // Переключаем состояние на true
+      setTimeout(() => {
+        eventTriggered.value = false; // Переключаем обратно на false после задержки
+      }, 1000); // Задержка в 1 секунду
     };
     const updateSelectedField = () => {
       console.log("update selected field");
-      selectedField.value = sessionStorage.getItem("activeField") ? (JSON.parse(sessionStorage.getItem("activeField"))) : null;
+      selectedField.value = sessionStorage.getItem("activeField")
+        ? JSON.parse(sessionStorage.getItem("activeField"))
+        : null;
     };
     // Watch для обработки изменений activeField
     watch(selectedField, (newValue) => {
@@ -614,6 +560,7 @@ export default {
     });
 
     onMounted(async () => {
+      //clearPolygons();
       selectedSeason.value =
         JSON.parse(sessionStorage.getItem("activeSeason")) || null;
       selectedField.value =
@@ -653,7 +600,8 @@ export default {
       undoLastAction,
       postContours,
       updateSelectedField,
-      updateFieldsInChild
+      updateFieldsInChild,
+      toggleEditMode,
     };
   },
 };
@@ -715,16 +663,15 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.popup-content .field-name {
-  font-size: 18px;
+.popup-content .contour-name {
+  font-size: 30px;
   color: #333;
-  margin-bottom: 5px;
 }
 
-.popup-content .crop-name {
+.field-name {
   font-size: 16px;
-  color: #666;
-  margin-bottom: 10px;
+  color: #4b4949;
+  padding-top: 10px;
 }
 
 .popup-content .field-description {
@@ -771,12 +718,13 @@ export default {
   gap: 5px; /* Расстояние между кнопками */
   height: 50px;
   justify-content: center; /* Центровка по горизонтали */
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .details-button {
   font-size: 13px; /* Размер шрифта на кнопках */
   color: rgba(0, 0, 0, 0.726); /* Цвет текста на кнопках */
-  padding-left: 10px;
   padding-left: 10px;
   width: 110px;
   font-weight: bold;

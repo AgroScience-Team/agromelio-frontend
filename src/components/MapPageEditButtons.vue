@@ -35,7 +35,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <q-btn fab color="primary" icon="edit" class="button" @click="editModeOn = !editModeOn">
+    <q-btn fab color="primary" icon="edit" class="button" @click="toggleEditMode">
       <div class="button-overlay">
         <p>Режим редактирования</p>
       </div>
@@ -68,6 +68,11 @@ import { useQuasar } from 'quasar';
       const postContours = () =>{
         emit('postContours');
       }
+      const toggleEditMode = () =>{
+        editModeOn.value = !editModeOn.value;
+        emit('isEditMode', editModeOn.value);
+        console.log("edit mode grandchild", );
+      }
 
   return {
     startDrawing,
@@ -75,7 +80,8 @@ import { useQuasar } from 'quasar';
     removeSelectedPolygon,
         confirm,
         editModeOn,
-        postContours
+        postContours,
+        toggleEditMode
   };
     }
   }
