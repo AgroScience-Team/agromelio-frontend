@@ -76,11 +76,11 @@ export default {
           link: '/map'
         },
 
-        {
+        /*{
           title: 'Культуры',
           icon: 'o_spa',
           link: '/culture'
-        },
+        },*/
 
         {
           title: 'Севооборот',
