@@ -44,7 +44,6 @@
       :updateFields="updateFieldsInChild"
       :polygonIsFinished="polygonIsFinished"
     ></dropdown-or-add-season-field-buttons>
-
   </div>
 </template>
 
@@ -100,8 +99,18 @@ export default {
     const toggleEditMode = (isEditModeOn) => {
       isEditMode.value = isEditModeOn;
     };
-    const handleContourPopupClick = (fieldId) => {
-      router.push(`/field_information?fieldId=${fieldId}`);
+    const handleContourPopupClick = (contour) => {
+      console.log(`{
+            "seasonId": ${selectedSeason.value.id},
+            "seasonName": ${selectedSeason.value.name},
+            "fieldId": ${selectedField.value.id},
+            "fieldName": ${selectedField.value.name},
+            "contourId": ${contour.id},
+            "contourName": ${contour.name}
+          }`);
+      router.push(  `/rotation?seasonId=${encodeURIComponent(selectedSeason.value.id)}&seasonName=${encodeURIComponent(selectedSeason.value.name)}&fieldId=${encodeURIComponent(selectedField.value.id)}&fieldName=${encodeURIComponent(selectedField.value.name)}&contourId=${encodeURIComponent(contour.id)}&contourName=${encodeURIComponent(contour.name)}`
+
+          );
     };
     const handleFieldPopupClick = (fieldId) => {
       router.push(`/field_weather_info?fieldId=${fieldId}`);
@@ -207,16 +216,16 @@ export default {
                 colorDialog.value = true; // Открытие диалога для редактирования
                 return;
               }
-
+              console.log("ididid", contour.id);
               const contourInfoButton = document.getElementById(
                 `contour-info-${contour.id}`
               );
               contourInfoButton.addEventListener("click", () =>
-                handleContourPopupClick(contour.id)
+                handleContourPopupClick(contour)
               );
 
               const fieldInfoButton = document.getElementById(
-                `field-info-${contour.id}`
+                `field-info-${selectedField.value.id}`
               );
               fieldInfoButton.addEventListener("click", () =>
                 handleFieldPopupClick(
@@ -225,7 +234,6 @@ export default {
               );
 
               try {
-                console.log(selectedField.value.id);
                 const meteoResponse = await axios.get(
                   `${process.env.VUE_APP_BASE_URL}/api/meteo/preview/${selectedField.value.id}`,
                   {
@@ -466,7 +474,6 @@ export default {
         console.log("No polygon selected to remove");
       }
     };
-
 
     const undoLastAction = () => {
       // если есть маркеры на карте удаляем последнюю точку
@@ -786,7 +793,6 @@ export default {
 };
 </script>
 
-
 <style>
 .map-container {
   position: relative;
@@ -919,5 +925,4 @@ export default {
 .details-button:hover {
   background-color: #0056b3; /* Цвет фона кнопки при наведении */
 }
-
 </style>
