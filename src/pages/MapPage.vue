@@ -100,17 +100,30 @@ export default {
       isEditMode.value = isEditModeOn;
     };
     const handleContourPopupClick = (contour) => {
-      console.log(`{
+      console.log(
+        contour,
+        `{
             "seasonId": ${selectedSeason.value.id},
             "seasonName": ${selectedSeason.value.name},
             "fieldId": ${selectedField.value.id},
             "fieldName": ${selectedField.value.name},
             "contourId": ${contour.id},
             "contourName": ${contour.name}
-          }`);
-      router.push(  `/rotation?seasonId=${encodeURIComponent(selectedSeason.value.id)}&seasonName=${encodeURIComponent(selectedSeason.value.name)}&fieldId=${encodeURIComponent(selectedField.value.id)}&fieldName=${encodeURIComponent(selectedField.value.name)}&contourId=${encodeURIComponent(contour.id)}&contourName=${encodeURIComponent(contour.name)}`
-
-          );
+          }`
+      );
+      router.push(
+        `/rotation?seasonId=${encodeURIComponent(
+          selectedSeason.value.id
+        )}&seasonName=${encodeURIComponent(
+          selectedSeason.value.name
+        )}&fieldId=${encodeURIComponent(
+          selectedField.value.id
+        )}&fieldName=${encodeURIComponent(
+          selectedField.value.name
+        )}&contourId=${encodeURIComponent(
+          contour.id
+        )}&contourName=${encodeURIComponent(contour.name)}`
+      );
     };
     const handleFieldPopupClick = (fieldId) => {
       router.push(`/field_weather_info?fieldId=${fieldId}`);
@@ -163,7 +176,7 @@ export default {
             const polygon = L.polygon(coordinates, {
               color: polygonColor,
               fillColor: polygonColor,
-              fillOpacity: 0.5,
+              fillOpacity: 0.4,
             }).addTo(map.value);
             polygon.feature = polygon.feature || { type: "Feature" };
             polygon.feature.properties = polygon.feature.properties || {};
@@ -202,6 +215,24 @@ export default {
                 contourName.value = polygon.feature.properties.name;
                 colorDialog.value = true; // Открываем диалог редактирования
                 selectedPolygon = polygon;
+                isBorderVisible = !isBorderVisible;
+                if (isBorderVisible) {
+                  // Убираем рамку
+                  selectedPolygon.setStyle({ weight: 0 });
+                } else {
+                  // Добавляем рамку
+                  // Сбрасываем стиль предыдущего полигона
+                  console.log("prev ", previousPolygon);
+                  if (previousPolygon && previousPolygon !== polygon) {
+                    previousPolygon.setStyle({ weight: 0 }); // Убираем рамку с предыдущего полигона
+                  }
+                  selectedPolygon.setStyle({
+                    weight: 4,
+                    color: "black",
+                    opacity: 1,
+                  }); // Толщина и цвет рамки
+                  previousPolygon = polygon;
+                }
               } else {
                 console.log("Editing mode inactive. Opening popup...");
                 polygon.closePopup(); // Закрываем попап, если он был открыт
@@ -216,7 +247,6 @@ export default {
                 colorDialog.value = true; // Открытие диалога для редактирования
                 return;
               }
-              console.log("ididid", contour.id);
               const contourInfoButton = document.getElementById(
                 `contour-info-${contour.id}`
               );
@@ -277,6 +307,7 @@ export default {
         currentLayer = null;
       }
       colorDialog.value = false;
+      contourName.value = null;
     };
 
     //     Диалог выбора цвета: Пользователь может выбрать цвет, который применяется к текущему полигону.
@@ -305,6 +336,8 @@ export default {
     let drawControl = null;
     let drawnHandler = null; // Объявляем переменную для обработчика
     let selectedPolygon = null; // Переменная для хранения выделенного полигона
+    let previousPolygon = null; // Хранит ссылку на ранее выделенный полигон
+
     const polygonIsFinished = ref(false);
     const startDrawing = (isDrawing) => {
       isDrawingEnabled.value = isDrawing;
@@ -331,6 +364,10 @@ export default {
               // Устанавливаем стиль для нового выбранного полигона
               selectedPolygon = layer;
               isBorderVisible = !isBorderVisible;
+              // Сбрасываем стиль предыдущего полигона
+              if (previousPolygon && previousPolygon !== polygon) {
+                previousPolygon.setStyle({ weight: 0 }); // Убираем рамку с предыдущего полигона
+              }
               if (isBorderVisible) {
                 // Убираем рамку
                 selectedPolygon.setStyle({ weight: 0 });
@@ -341,6 +378,7 @@ export default {
                   color: "black",
                   opacity: 1,
                 }); // Толщина и цвет рамки
+              previousPolygon = polygon;
               }
             });
             if (
@@ -374,13 +412,8 @@ export default {
                 );
 
                 // Проверяем пересечение
-                const intersection = turf.intersect(turfNew, turfExisting);
 
-                // Пересечение не должно быть наложением (допускаем общие границы)
-                if (
-                  intersection &&
-                  !turf.booleanDisjoint(turfNew, turfExisting)
-                ) {
+                if(turf.booleanOverlap(turfNew, turfExisting)){
                   console.log("Пересечение найдено!");
                   return true;
                 }
