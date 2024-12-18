@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md contour-info-container">
-    <div class="text-h6 font-bold">Добавление севооборота в контуре</div>
+    <div class="text-h6 font-bold">Информация о контуре</div>
     <div class="q-mt-md q-gutter-y-xs">
       <div class="info-item row">
         <span class="label col-auto text-subtitle1 font-bold">Сезон:</span>
