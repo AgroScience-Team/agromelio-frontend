@@ -48,6 +48,11 @@ const routes = [
         component: () => import("pages/Rotation_add_page.vue")
       },
       {
+        path: "add_soil",
+        name: "add_soil",
+        component: () => import("pages/Soil_add_page.vue")
+      },
+      {
         path: "rotation",
         name: "RotationPage",
         component: () => import("pages/RotationPage.vue")
@@ -91,11 +96,6 @@ const routes = [
         path: "fetch_field",
         name: "fetch_field",
         component: () => import("pages/Fetch_field_page.vue")
-      },
-      {
-        path: "add_soil",
-        name: "add_soil",
-        component: () => import("pages/Add_soil_page.vue")
       },
       {
         path: "fetch_soil",

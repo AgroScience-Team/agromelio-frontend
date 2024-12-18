@@ -1,6 +1,7 @@
 <template>
   <div class="map-container">
     <div id="map"></div>
+    <!-- 颜色选择对话框 -->
     <!-- Диалог выбора цвета -->
     <q-dialog v-model="colorDialog" persistent>
       <q-card style="width: 300px">
@@ -43,6 +44,7 @@
       :updateFields="updateFieldsInChild"
       :polygonIsFinished="polygonIsFinished"
     ></dropdown-or-add-season-field-buttons>
+
   </div>
 </template>
 
@@ -70,6 +72,7 @@ import DropdownOrAddSeasonFieldButtons from "src/components/DropdownOrAddSeasonF
 
 export default {
   components: { DropdownOrAddSeasonFieldButtons },
+
   name: "MapComponent",
   setup() {
     const map = ref(null);
@@ -464,6 +467,7 @@ export default {
       }
     };
 
+
     const undoLastAction = () => {
       // если есть маркеры на карте удаляем последнюю точку
       if (
@@ -782,6 +786,7 @@ export default {
 };
 </script>
 
+
 <style>
 .map-container {
   position: relative;
@@ -914,4 +919,5 @@ export default {
 .details-button:hover {
   background-color: #0056b3; /* Цвет фона кнопки при наведении */
 }
+
 </style>

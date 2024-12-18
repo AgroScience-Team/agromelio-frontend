@@ -109,6 +109,7 @@ export default {
           }
         )
         .then((response) => {
+
           $q.notify({
             type: "positive",
             message: "Сезон успешно создан",
@@ -157,4 +158,5 @@ export default {
 .full-width-button {
   width: 100%;
 }
+
 </style>
