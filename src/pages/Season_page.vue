@@ -6,25 +6,39 @@
           <div class="text-h6">Севооборот</div>
         </q-card-section>
         <q-card-section>
-          <div class="row justify-between items-center">
-            <q-select
-              v-model="OnSeason"
-              label="Выбор сезона"
-              :options="seasons"
-              option-value="value"
-              option-label="label"
-              dense
-              outlined
-              class="season-select"
-              @update:model-value="fetchFields"
-            />
-            <q-btn
-              icon="add"
-              label="Добавить сезон"
-              color="primary"
-              class="add-season-btn button-common"
-              @click="navigateToAddSeason"
-            />
+
+          <div class="row items-center no-wrap" style="width: 100%;">
+
+            <div class="col-auto">
+              <q-select
+                v-model="OnSeason"
+                label="Выбор сезона"
+                :options="seasons"
+                option-value="value"
+                option-label="label"
+                dense
+                outlined
+                class="season-select"
+                @update:model-value="fetchFields"
+              />
+            </div>
+            
+            <div class="col row items-center justify-end">
+              <q-btn
+                icon="add"
+                label="Добавить сезон"
+                color="primary"
+                class="button-common"
+                @click="navigateToAddSeason"
+              />
+              <q-btn
+                icon="add"
+                label="Добавить поле"
+                color="primary"
+                class="button-common"
+                @click="navigateToAddField"
+              />
+            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -43,7 +57,6 @@
               row-key="contourId"
               class="fixed-table"
             >
-
               <template v-slot:body-cell-fieldName="props">
                 <q-td :props="props" class="field-name-cell">
                   {{ props.row.fieldName }}
@@ -94,6 +107,7 @@
     </div>
   </q-page>
 </template>
+
 
 
 
@@ -341,6 +355,24 @@ export default {
       router.push({ name: 'add_season' });
     };
 
+    const navigateToAddField = () => {
+      if (!OnSeason.value) {
+        $q.notify({
+          color: 'warning',
+          message: 'Пожалуйста, сначала выберите сезон.',
+          icon: 'warning'
+        });
+        return;
+      }
+
+      router.push({
+        name: 'add_field',
+        query: {
+          seasonId: OnSeason.value
+        }
+      });
+    };
+
     const fetchFields = async (OnSeason) => {
       if (!OnSeason || !OnSeason.value) return;
       const seasonId = OnSeason.value;
@@ -358,8 +390,8 @@ export default {
         if (!data || !Array.isArray(data) || data.length === 0) {
           fieldsData.value = fakeData.flatMap(field => {
             return field.contours.map((contour, index) => ({
-              seasonId: "mock-season-id",
-              seasonName: "Летний сезон",
+              seasonId: seasonId,
+              seasonName: seasonName,
               fieldId: field.id,
               fieldName: index === 0 ? field.name : '',
               contourId: contour.id,
@@ -407,8 +439,8 @@ export default {
 
         fieldsData.value = fakeData.flatMap(field => {
           return field.contours.map((contour, index) => ({
-            seasonId: "mock-season-id",
-            seasonName: "Летний сезон",
+            seasonId: seasonId,
+            seasonName: seasonName,
             fieldId: field.id,
             fieldName: index === 0 ? field.name : '',
             contourId: contour.id,
@@ -472,7 +504,8 @@ export default {
       formatDate,
       ensureColorFormat,
       navigateToEditPage,
-      navigateToAddSeason
+      navigateToAddSeason,
+      navigateToAddField
     };
   }
 };
@@ -480,32 +513,25 @@ export default {
 
 
 <style scoped>
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
 .season-select {
   width: 200px;
 }
+
 .button-common {
   width: 220px;
   height: 60px;
   background-color: #2e3a4b;
-  color: #ffffff; 
+  color: #ffffff;
   font-size: 1rem;
-  border-radius: 10px; 
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); 
-  text-transform: none; 
-  padding: 0 16px; 
-  font-weight: 500; 
-  letter-spacing: 0.5px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 6px; 
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+  text-transform: none;
+  padding: 0 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease-in-out;
 }
 
@@ -535,12 +561,12 @@ export default {
 
 .fixed-table thead th.crop-rotations-header {
   position: sticky;
-  left: 600px; 
+  left: 600px;
   z-index: 3;
   background-color: #f5f5f5;
   text-align: left;
-  padding-left: 20px; 
-  transform: translateX(20px); 
+  padding-left: 20px;
+  transform: translateX(20px);
 }
 
 .field-name-cell {
@@ -571,7 +597,7 @@ export default {
 .crop-rotations {
   display: inline-flex;
   flex-wrap: nowrap;
-  gap: 80px; 
+  gap: 80px;
   padding-right: 24px;
   align-items: center;
 }
@@ -608,15 +634,14 @@ export default {
   z-index: 2;
   flex-shrink: 0;
   margin-left: -3px;
-  margin-right: -3px; 
+  margin-right: -3px;
 }
-
 
 .timeline-line {
   height: 2px;
   background-color: #2196F3;
   margin: 0 6px;
-  min-width: 50px; 
+  min-width: 50px;
   flex-grow: 1;
 }
 
@@ -627,10 +652,9 @@ export default {
   border-radius: 2px;
   white-space: nowrap;
   position: absolute;
-  top: 14px; 
+  top: 14px;
   z-index: 3;
 }
-
 
 .timeline-date.left {
   transform: translateX(-50%);
@@ -638,9 +662,8 @@ export default {
 
 .timeline-date.right {
   transform: translateX(50%);
-  right: 0; 
+  right: 0;
 }
-
 
 .q-btn.flat {
   margin-left: 8px;
@@ -655,4 +678,3 @@ export default {
   border-right: none;
 }
 </style>
-
