@@ -5,7 +5,7 @@
       <div class="q-mt-md q-gutter-y-xs">
         <div class="info-item row">
           <span class="label col-auto text-subtitle1 font-bold">Сезон:</span>
-          <span class="value col text-subtitle1">{{ fieldInfo.season }}</span>
+          <span class="value col text-subtitle1">{{ fieldInfo.seasonName }}</span>
         </div>
         <div class="info-item row">
           <span class="label col-auto text-subtitle1 font-bold">Поле:</span>
@@ -43,15 +43,23 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useQuasar } from 'quasar';
-import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { userStore } from 'src/usage';
 
 export default {
   name: 'FieldWeatherInfoPage',
   setup() {
+
+    const route = useRoute();
+
+    const seasonName = ref(route.query.seasonName || '');
+    const fieldName = ref(route.query.fieldName || '');
+    const fieldId = ref(route.query.fieldId || '');
+
     const fieldInfo = ref({
-      season: 'Лето 2024',
-      fieldName: 'Дальнее поле',
+      fieldId: fieldId.value,
+      fieldName: fieldName.value,
+      seasonName: seasonName.value
     });
 
     const weatherExpanded = ref(true);
@@ -104,6 +112,9 @@ export default {
 
     return {
       fieldInfo,
+      seasonName,
+      fieldName,
+      fieldId,
       weatherExpanded,
       weatherData,
       weatherError,

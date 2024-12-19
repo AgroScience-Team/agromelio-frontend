@@ -611,7 +611,9 @@ export default {
         name: 'add_soil', 
         query: {
           contourId: contourInfo.value.contourId, 
+          seasonId: contourInfo.value.seasonId,
           seasonName: contourInfo.value.seasonName, 
+          fieldId: contourInfo.value.fieldId,
           fieldName: contourInfo.value.fieldName, 
           contourName: contourInfo.value.contourName, 
           soilInfoId: soilInfo.id, 
@@ -639,9 +641,11 @@ export default {
         name: 'add_rotation',
         query: {
           contourId: contourInfo.value.contourId,
-          seasonName: contourInfo.value.seasonName,
-          fieldName: contourInfo.value.fieldName,
           contourName: contourInfo.value.contourName,
+          seasonId: contourInfo.value.seasonId,
+          seasonName: contourInfo.value.seasonName,
+          fieldId: contourInfo.value.fieldId,
+          fieldName: contourInfo.value.fieldName,
           cropRotationId: cropRotation.cropRotationId,
           culture: cropRotation.culture,
           cultivar: cropRotation.cultivar,
@@ -662,7 +666,9 @@ export default {
         name: 'add_rotation',
         query: {
           contourId: contourInfo.value.contourId,
+          seasonId: contourInfo.value.seasonId,
           seasonName: contourInfo.value.seasonName,
+          fieldId: contourInfo.value.fieldId,
           fieldName: contourInfo.value.fieldName,
           contourName: contourInfo.value.contourName
         }
@@ -674,7 +680,9 @@ export default {
         name: 'add_soil', 
         query: {
           contourId: contourInfo.value.contourId, 
+          seasonId: contourInfo.value.seasonId,
           seasonName: contourInfo.value.seasonName, 
+          fieldId: contourInfo.value.fieldId,
           fieldName: contourInfo.value.fieldName, 
           contourName: contourInfo.value.contourName
         }
