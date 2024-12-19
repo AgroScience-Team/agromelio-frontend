@@ -94,7 +94,7 @@ export default {
       try {
         if (isEditMode.value) {
           await axios.put(`${apiUrl}/crop-rotation`, payload, {
-            params: { cropRotationId: cropRotationId.value },
+            params: { id: cropRotationId.value },
             headers: {
               Authorization: `Bearer ${accessToken.value}`,
               'Content-Type': 'application/json'

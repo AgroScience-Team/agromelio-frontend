@@ -102,8 +102,8 @@ export default {
 
       try {
         if (isEditMode.value) {
-          await axios.put(`${apiUrl}/soil-compositions`, payload, {
-            params: { soilCompositionId: soilId.value },
+          await axios.put(`${apiUrl}/soil-composition`, payload, {
+            params: { id: soilId.value },
             headers: {
               Authorization: `Bearer ${accessToken.value}`,
               "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export default {
             icon: "check_circle",
           });
         } else {
-          await axios.post(`${apiUrl}/contours/${contourId.value}/soil-compositions`, payload, {
+          await axios.post(`${apiUrl}/contours/${contourId.value}/soil-composition`, payload, {
             headers: {
               Authorization: `Bearer ${accessToken.value}`,
               "Content-Type": "application/json",

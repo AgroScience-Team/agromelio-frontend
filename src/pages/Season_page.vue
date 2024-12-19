@@ -22,23 +22,6 @@
                 @update:model-value="fetchFields"
               />
             </div>
-            
-            <div class="col row items-center justify-end">
-              <q-btn
-                icon="add"
-                label="Добавить сезон"
-                color="primary"
-                class="button-common"
-                @click="navigateToAddSeason"
-              />
-              <q-btn
-                icon="add"
-                label="Добавить поле"
-                color="primary"
-                class="button-common"
-                @click="navigateToAddField"
-              />
-            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -192,141 +175,6 @@ export default {
           }
         ]
       },
-      {
-        id: "3fa85f64-5717-4562-b3fc-2c963f66afa8",
-        name: "Поле 2",
-        description: "Описание поля 2",
-        contours: [
-          {
-            name: "Контур 3",
-            color: "FF5733",
-            id: "3fa85f64-5717-4562-b3fc-2c963f66afa9",
-            squareArea: "30",
-            cropRotations: [
-              {
-                id: "5",
-                culture: "Культура 5",
-                cultivar: "Сорт 5",
-                startDate: "2024-09-01",
-                endDate: "2024-09-15",
-                description: "Описание 5"
-              },
-              {
-                id: "6",
-                culture: "Культура 6",
-                cultivar: "Сорт 6",
-                startDate: "2024-09-16",
-                endDate: "2024-09-30",
-                description: "Описание 6"
-              }
-            ]
-          },
-          {
-            name: "Контур 4",
-            color: "33FF57",
-            id: "3fa85f64-5717-4562-b3fc-2c963f66afaa",
-            squareArea: "40",
-            cropRotations: [
-              {
-                id: "7",
-                culture: "Культура 7",
-                cultivar: "Сорт 7",
-                startDate: "2024-10-01",
-                endDate: "2024-10-20",
-                description: "Описание 7"
-              },
-              {
-                id: "8",
-                culture: "Культура 8",
-                cultivar: "Сорт 8",
-                startDate: "2024-10-21",
-                endDate: "2024-10-31",
-                description: "Описание 8"
-              },
-              {
-                id: "9",
-                culture: "Культура 9",
-                cultivar: "Сорт 9",
-                startDate: "2024-10-01",
-                endDate: "2024-10-20",
-                description: "Описание 9"
-              },
-              {
-                id: "10",
-                culture: "Культура 10",
-                cultivar: "Сорт 10",
-                startDate: "2024-10-21",
-                endDate: "2024-10-31",
-                description: "Описание 10"
-              },
-              {
-                id: "11",
-                culture: "Культура 11",
-                cultivar: "Сорт 11",
-                startDate: "2024-10-11",
-                endDate: "2024-10-20",
-                description: "Описание 11"
-              },
-              {
-                id: "12",
-                culture: "Культура 12",
-                cultivar: "Сорт 12",
-                startDate: "2024-10-21",
-                endDate: "2024-10-31",
-                description: "Описание 12"
-              },
-              {
-                id: "13",
-                culture: "Культура 13",
-                cultivar: "Сорт 13",
-                startDate: "2024-10-01",
-                endDate: "2024-11-20",
-                description: "Описание 13"
-              },
-              {
-                id: "14",
-                culture: "Культура 14",
-                cultivar: "Сорт 14",
-                startDate: "2024-10-21",
-                endDate: "2024-12-31",
-                description: "Описание 14"
-              }
-              
-            ]
-          }
-        ]
-      },
-      {
-        id: "3fa85f64-5717-4562-b3fc-2c963f66afab",
-        name: "Поле 3",
-        description: "Описание поля 3",
-        contours: [
-          {
-            name: "Контур 5",
-            color: "5733FF",
-            id: "3fa85f64-5717-4562-b3fc-2c963f66afac",
-            squareArea: "50",
-            cropRotations: [
-              {
-                id: "9",
-                culture: "Культура 9",
-                cultivar: "Сорт 9",
-                startDate: "2024-11-01",
-                endDate: "2024-11-15",
-                description: "Описание 9"
-              },
-              {
-                id: "10",
-                culture: "Культура 10",
-                cultivar: "Сорт 10",
-                startDate: "2024-11-16",
-                endDate: "2024-11-30",
-                description: "Описание 10"
-              }
-            ]
-          }
-        ]
-      }
     ];
 
 
@@ -351,28 +199,6 @@ export default {
       }
     });
 
-    const navigateToAddSeason = () => {
-      router.push({ name: 'add_season' });
-    };
-
-    const navigateToAddField = () => {
-      if (!OnSeason.value) {
-        $q.notify({
-          color: 'warning',
-          message: 'Пожалуйста, сначала выберите сезон.',
-          icon: 'warning'
-        });
-        return;
-      }
-
-      router.push({
-        name: 'add_field',
-        query: {
-          seasonId: OnSeason.value
-        }
-      });
-    };
-
     const fetchFields = async (OnSeason) => {
       if (!OnSeason || !OnSeason.value) return;
       const seasonId = OnSeason.value;
@@ -388,25 +214,11 @@ export default {
         const data = response.data;
 
         if (!data || !Array.isArray(data) || data.length === 0) {
-          fieldsData.value = fakeData.flatMap(field => {
-            return field.contours.map((contour, index) => ({
-              seasonId: seasonId,
-              seasonName: seasonName,
-              fieldId: field.id,
-              fieldName: index === 0 ? field.name : '',
-              contourId: contour.id,
-              contourName: contour.name,
-              contourColor: contour.color,
-              squareArea: contour.squareArea,
-              cropRotations: contour.cropRotations.map(rotation => ({
-                cropRotationId: rotation.id,
-                culture: rotation.culture,
-                cultivar: rotation.cultivar,
-                startDate: rotation.startDate,
-                endDate: rotation.endDate,
-                description: rotation.description
-              }))
-            }));
+          fieldsData.value = []; 
+          $q.notify({
+            color: 'warning',
+            message: 'No fields found for the selected season.',
+            icon: 'info'
           });
         } else {
           fieldsData.value = data.flatMap(field => {
@@ -436,27 +248,7 @@ export default {
           message: 'Failed to load field data. Please check your connection or try again later.',
           icon: 'warning'
         });
-
-        fieldsData.value = fakeData.flatMap(field => {
-          return field.contours.map((contour, index) => ({
-            seasonId: seasonId,
-            seasonName: seasonName,
-            fieldId: field.id,
-            fieldName: index === 0 ? field.name : '',
-            contourId: contour.id,
-            contourName: contour.name,
-            contourColor: contour.color,
-            squareArea: contour.squareArea,
-            cropRotations: contour.cropRotations.map(rotation => ({
-              cropRotationId: rotation.id,
-              culture: rotation.culture,
-              cultivar: rotation.cultivar,
-              startDate: rotation.startDate,
-              endDate: rotation.endDate,
-              description: rotation.description
-            }))
-          }));
-        });
+        fieldsData.value = [];
       }
     };
 
@@ -503,9 +295,7 @@ export default {
       calculateTimelineWidth,
       formatDate,
       ensureColorFormat,
-      navigateToEditPage,
-      navigateToAddSeason,
-      navigateToAddField
+      navigateToEditPage
     };
   }
 };
@@ -516,25 +306,6 @@ export default {
 .season-select {
   width: 200px;
 }
-
-.button-common {
-  width: 220px;
-  height: 60px;
-  background-color: #2e3a4b;
-  color: #ffffff;
-  font-size: 1rem;
-  border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-  text-transform: none;
-  padding: 0 16px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease-in-out;
-}
-
 
 .table-scroll-container {
   width: 100%;
