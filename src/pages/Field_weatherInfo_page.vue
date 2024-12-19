@@ -68,8 +68,8 @@ export default {
     const accessToken = computed(() => userStore.state.access_token);
 
     const fetchMeteoData = async () => {
-      const fieldId = '47';
-      const url = `${process.env.VUE_APP_BASE_URL}/api/meteo/${fieldId}`;
+
+      const url = `${process.env.VUE_APP_BASE_URL}/api/meteo/${fieldId.value}`;
 
       try {
         const response = await axios.get(url, {
