@@ -42,7 +42,9 @@
             >
               <template v-slot:body-cell-fieldName="props">
                 <q-td :props="props" class="field-name-cell">
-                  {{ props.row.fieldName }}
+                  <div :style="{ visibility: props.row.contourId === firstContourId(props.row.fieldId) ? 'visible' : 'hidden' }">
+                    {{ props.row.fieldName }}
+                  </div>
                 </q-td>
               </template>
 
@@ -226,7 +228,7 @@ export default {
               seasonId: seasonId,
               seasonName: seasonName,
               fieldId: field.id,
-              fieldName: index === 0 ? field.name : '',
+              fieldName: field.name,
               contourId: contour.id,
               contourName: contour.name,
               contourColor: contour.color,
@@ -258,6 +260,11 @@ export default {
       const totalDays = (end - start) / (1000 * 60 * 60 * 24); // Calculate days
       const pixelPerDay = 10; // Scale factor: 10px per day
       return `${totalDays * pixelPerDay}px`;
+    };
+
+    const firstContourId = (fieldId) => {
+      const fieldContours = fieldsData.value.filter(row => row.fieldId === fieldId);
+      return fieldContours[0]?.contourId;
     };
 
     const formatDate = (date) => {
@@ -295,7 +302,8 @@ export default {
       calculateTimelineWidth,
       formatDate,
       ensureColorFormat,
-      navigateToEditPage
+      navigateToEditPage,
+      firstContourId
     };
   }
 };

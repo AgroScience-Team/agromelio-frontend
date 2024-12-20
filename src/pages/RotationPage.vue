@@ -423,6 +423,12 @@ export default {
               message: 'Информация о почве успешно удалена!',
               icon: 'check_circle',
             });
+            if (soilColumns.value.length === 2) {
+              console.log('---------------------No more soil data found. Reloading the page.-----------------------');
+              // 刷新整个页面
+              window.location.reload();
+              return;
+            }
             await fetchSoilData(); 
           } else {
             throw new Error('Failed to delete soil composition.');
