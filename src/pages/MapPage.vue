@@ -125,7 +125,7 @@ export default {
         )}&contourName=${encodeURIComponent(contour.name)}`
       );
     };
-    const handleFieldPopupClick = () => {
+    const handleFieldPopupClick = (contour) => {
       router.push({
         name: 'FieldWeatherInfoPage', 
         query: {

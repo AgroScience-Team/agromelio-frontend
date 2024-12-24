@@ -8,7 +8,6 @@
         <q-card-section>
 
           <div class="row items-center no-wrap" style="width: 100%;">
-
             <div class="col-auto">
               <q-select
                 v-model="OnSeason"
@@ -76,7 +75,7 @@
                         <span class="timeline-dot"></span>
                         <span
                           class="timeline-line"
-                          :style="{ width: calculateTimelineWidth(crop.startDate, crop.endDate) }"
+                          :style="{ width: '200px' }"
                         ></span>
                         <span class="timeline-dot"></span>
                         <span class="timeline-date right">{{ formatDate(crop.endDate) }}</span>
@@ -92,9 +91,6 @@
     </div>
   </q-page>
 </template>
-
-
-
 
 <script>
 import { ref, onMounted, computed } from 'vue';
@@ -120,66 +116,6 @@ export default {
       { name: 'cropRotations', label: 'Посевы', align: 'center', field: 'cropRotations'}
     ];
 
-    // fake data
-    const fakeData = [
-      {
-        id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        name: "Поле 1",
-        description: "Описание поля 1",
-        contours: [
-          {
-            name: "Контур 1",
-            color: "d1E6dF",
-            id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            squareArea: "10",
-            cropRotations: [
-              {
-                id: "1",
-                culture: "Культура 1",
-                cultivar: "Сорт 1",
-                startDate: "2024-07-01",
-                endDate: "2024-07-21",
-                description: "Описание 1"
-              },
-              {
-                id: "2",
-                culture: "Культура 2",
-                cultivar: "Сорт 2",
-                startDate: "2024-07-22",
-                endDate: "2024-12-30",
-                description: "Описание 2"
-              }
-            ]
-          },
-          {
-            name: "Контур 2",
-            color: "A1B2C3",
-            id: "3fa85f64-5717-4562-b3fc-2c963f66afa7",
-            squareArea: "20",
-            cropRotations: [
-              {
-                id: "3",
-                culture: "Культура 3",
-                cultivar: "Сорт 3",
-                startDate: "2024-08-01",
-                endDate: "2024-08-15",
-                description: "Описание 3"
-              },
-              {
-                id: "4",
-                culture: "Культура 4",
-                cultivar: "Сорт 4",
-                startDate: "2024-08-16",
-                endDate: "2024-08-31",
-                description: "Описание 4"
-              }
-            ]
-          }
-        ]
-      },
-    ];
-
-
     onMounted(async () => {
       try {
         const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields-service/seasons`, {
@@ -203,10 +139,12 @@ export default {
 
     const fetchFields = async (OnSeason) => {
       if (!OnSeason || !OnSeason.value) return;
+
       const seasonId = OnSeason.value;
       const seasonName = OnSeason.label;
+
       try {
-        const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields-service/seasons/${seasonId}/fields`, {
+        const response = await axios.get(`${process.env.VUE_APP_BASE_URL}/api/fields-service/seasons/full`, {
           headers: {
             Authorization: `Bearer ${accessToken.value}`,
             'Content-Type': 'application/json'
@@ -214,17 +152,18 @@ export default {
         });
 
         const data = response.data;
+        const currentSeason = data.find(season => season.id === seasonId);
 
-        if (!data || !Array.isArray(data) || data.length === 0) {
-          fieldsData.value = []; 
+        if (!currentSeason || !currentSeason.fields || currentSeason.fields.length === 0) {
+          fieldsData.value = [];
           $q.notify({
             color: 'warning',
             message: 'No fields found for the selected season.',
             icon: 'info'
           });
         } else {
-          fieldsData.value = data.flatMap(field => {
-            return field.contours.map((contour, index) => ({
+          fieldsData.value = currentSeason.fields.flatMap(field => {
+            return field.contours.map(contour => ({
               seasonId: seasonId,
               seasonName: seasonName,
               fieldId: field.id,
@@ -254,12 +193,8 @@ export default {
       }
     };
 
-    const calculateTimelineWidth = (startDate, endDate) => {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const totalDays = (end - start) / (1000 * 60 * 60 * 24); // Calculate days
-      const pixelPerDay = 10; // Scale factor: 10px per day
-      return `${totalDays * pixelPerDay}px`;
+    const calculateTimelineWidth = () => {
+      return '200px'; // Fixed width for all timeline bars
     };
 
     const firstContourId = (fieldId) => {
@@ -309,7 +244,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .season-select {
   width: 200px;
@@ -336,16 +270,6 @@ export default {
   text-align: center;
   white-space: nowrap;
   padding: 12px;
-}
-
-.fixed-table thead th.crop-rotations-header {
-  position: sticky;
-  left: 600px;
-  z-index: 3;
-  background-color: #f5f5f5;
-  text-align: left;
-  padding-left: 20px;
-  transform: translateX(20px);
 }
 
 .field-name-cell {
@@ -420,8 +344,7 @@ export default {
   height: 2px;
   background-color: #2196F3;
   margin: 0 6px;
-  min-width: 50px;
-  flex-grow: 1;
+  width: 200px;
 }
 
 .timeline-date {
